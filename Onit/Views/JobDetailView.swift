@@ -126,9 +126,8 @@ struct ProblemCard: View {
 
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .top, spacing: 10) {
-                Image(systemName: "exclamationmark.circle")
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(.red)
+                BeadGlyph(mood: .failed, size: 16)
+                    .padding(.top, 1)
                 VStack(alignment: .leading, spacing: 3) {
                     Text(streak > 1 ? "Didn't finish \(streak) times in a row" : "Didn't finish last time")
                         .font(.system(size: 12, weight: .semibold))
@@ -154,11 +153,11 @@ struct ProblemCard: View {
                     .font(.system(size: 11))
                     .foregroundStyle(.secondary)
             }
-            .padding(.leading, 23)
+            .padding(.leading, 26)
         }
         .padding(10)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .card(tint: .red)
+        .card()
     }
 
     private func reason(_ explanation: FailureExplainer.Explanation) -> String {
@@ -174,9 +173,8 @@ struct OverlapCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .top, spacing: 10) {
-                Image(systemName: "exclamationmark.triangle")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(.orange)
+                BeadGlyph(mood: .headsUp, size: 16)
+                    .padding(.top, 1)
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Runs more often than you might think")
                         .font(.system(size: 12, weight: .semibold))
@@ -192,11 +190,11 @@ struct OverlapCard: View {
                     .font(.system(size: 11))
                     .foregroundStyle(.secondary)
             }
-            .padding(.leading, 22)
+            .padding(.leading, 26)
         }
         .padding(10)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .card(tint: .orange)
+        .card()
     }
 }
 

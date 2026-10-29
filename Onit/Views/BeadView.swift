@@ -71,6 +71,8 @@ struct BeadView: View {
     var runRange: CGFloat = 0
     /// Direction to the pointer when it's close, scaled 0...1; nil lets Bead look around on its own.
     var gaze: CGVector?
+    /// Bumped when someone clicks Bead; it answers with a hop, or a shiver when something failed.
+    var pokes = 0
 
     @State private var blink = false
     @State private var glance = CGVector.zero
@@ -81,6 +83,7 @@ struct BeadView: View {
     @State private var peek = false
     @State private var drip = false
     @State private var nudges = 0
+    @State private var poked = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
@@ -92,7 +95,8 @@ struct BeadView: View {
             .keyframeAnimator(initialValue: Nudge(), trigger: nudges) { content, nudge in
                 content.offset(x: nudge.x, y: nudge.y)
             } keyframes: { _ in
-                let hop: CGFloat = reduceMotion || mood != .headsUp ? 0 : -size * 0.2
+                let hops = mood == .headsUp || (poked && mood != .failed)
+                let hop: CGFloat = reduceMotion || !hops ? 0 : -size * 0.2
                 let shake: CGFloat = reduceMotion || mood != .failed ? 0 : size * 0.09
                 KeyframeTrack(\.y) {
                     CubicKeyframe(hop, duration: 0.14)
@@ -108,6 +112,14 @@ struct BeadView: View {
             .animation(.easeOut(duration: 0.25), value: mood)
             .animation(.spring(duration: 0.25, bounce: 0), value: gaze)
             .task(id: mood) { await live() }
+            .onChange(of: pokes) {
+                poked = true
+                nudges += 1
+                Task {
+                    try? await Task.sleep(for: .seconds(0.6))
+                    poked = false
+                }
+            }
             .accessibilityHidden(true)
     }
 
@@ -296,5 +308,30 @@ private struct Drop: Shape {
         path.addQuadCurve(to: CGPoint(x: rect.midX, y: rect.maxY), control: CGPoint(x: rect.minX - rect.width * 0.3, y: rect.maxY * 0.95))
         path.addQuadCurve(to: CGPoint(x: rect.midX, y: rect.minY), control: CGPoint(x: rect.maxX + rect.width * 0.3, y: rect.maxY * 0.95))
         return path
+    }
+}
+
+/// A still, small Bead used as the status icon in cards and rows, in place of a generic warning sign.
+struct BeadGlyph: View {
+    let mood: BeadMood
+    let size: CGFloat
+
+    var body: some View {
+        ZStack {
+            Circle().fill(mood.body)
+            HStack(spacing: size * 0.3 - size * 0.17) {
+                Circle().fill(mood.eyes).frame(width: size * 0.17, height: size * 0.17)
+                Circle().fill(mood.eyes).frame(width: size * 0.17, height: size * 0.17)
+            }
+            .offset(y: -size * 0.04)
+            if mood == .failed, size >= 14 {
+                Drop()
+                    .fill(Color(red: 0.42, green: 0.77, blue: 1))
+                    .frame(width: size * 0.22, height: size * 0.28)
+                    .offset(x: size * 0.5, y: -size * 0.46)
+            }
+        }
+        .frame(width: size, height: size)
+        .accessibilityHidden(true)
     }
 }

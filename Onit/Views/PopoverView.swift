@@ -5,6 +5,8 @@ struct PopoverView: View {
     var onDetailChange: (Bool) -> Void = { _ in }
     /// Bumped by the notch when it closes, so it always reopens on the list.
     var resetToken = 0
+    /// Opens a task's detail without the slide, for the notch's badge.
+    var deepLink: (id: String?, token: Int) = (nil, 0)
     @State private var selectedID: String?
     @State private var menuHost = MenuHost()
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -48,6 +50,10 @@ struct PopoverView: View {
         .onChange(of: selectedID) {
             menuHost.openID = nil
             onDetailChange($1 != nil)
+        }
+        .onChange(of: deepLink.token) {
+            menuHost.openID = nil
+            if let id = deepLink.id { navigate(to: id, animated: false) }
         }
         .onChange(of: resetToken) {
             menuHost.openID = nil

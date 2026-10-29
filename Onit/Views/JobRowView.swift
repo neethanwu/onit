@@ -5,7 +5,6 @@ struct JobRowView: View {
     let job: Job
     let now: Date
     let onOpen: () -> Void
-    @State private var hovering = false
 
     var body: some View {
         Button(action: onOpen) {
@@ -26,9 +25,7 @@ struct JobRowView: View {
                     }
                     HStack(spacing: 5) {
                         if job.schedule.hasOverlap {
-                            Image(systemName: "exclamationmark.triangle")
-                                .font(.system(size: 10, weight: .semibold))
-                                .foregroundStyle(.orange)
+                            BeadGlyph(mood: .headsUp, size: 11)
                         }
                         Text(ScheduleText.summary(job.schedule))
                             .lineLimit(1)
@@ -60,11 +57,7 @@ struct JobRowView: View {
                     .fill(rowFill)
             )
         }
-        .buttonStyle(PressableRowStyle())
-        .onHover { inside in
-            // Highlight appears at once and fades out, so moving down the list feels immediate.
-            withAnimation(inside ? nil : .easeOut(duration: 0.12)) { hovering = inside }
-        }
+        .buttonStyle(PressableRowStyle(pressedScale: 0.98))
         .contextMenu {
             Button(job.isHidden ? "Show in List" : "Hide from List") {
                 store.setHidden(job, hidden: !job.isHidden)
@@ -72,11 +65,10 @@ struct JobRowView: View {
         }
     }
 
-    private var rowFill: AnyShapeStyle {
-        if case .failed = job.state {
-            return AnyShapeStyle(Color.red.opacity(hovering ? 0.14 : 0.08))
-        }
-        return hovering ? AnyShapeStyle(.quaternary.opacity(0.7)) : AnyShapeStyle(.clear)
+    /// Hover is drawn by the list's shared highlight; a failed row keeps a faint red wash underneath it.
+    private var rowFill: Color {
+        if case .failed = job.state { return Color.red.opacity(0.08) }
+        return .clear
     }
 
     private var statusDetail: String? {

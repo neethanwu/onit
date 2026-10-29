@@ -26,14 +26,21 @@ struct JobListView: View {
     }
 
     @Environment(\.notchStyle) private var notchStyle
+    @Environment(\.notchModel) private var notchModel
 
     private var header: some View {
         HStack(alignment: .center, spacing: 10) {
             if notchStyle {
                 // The notch draws Bead itself and flies it here from the wing; this only holds its place.
-                Color.clear
-                    .frame(width: NotchModel.headerBeadSize, height: NotchModel.headerBeadSize)
-                    .background(GeometryReader { proxy in
+                Button {
+                    notchModel?.beadPokes += 1
+                } label: {
+                    Color.clear
+                        .frame(width: NotchModel.headerBeadSize, height: NotchModel.headerBeadSize)
+                        .contentShape(Circle())
+                }
+                .buttonStyle(.plain)
+                .background(GeometryReader { proxy in
                         Color.clear.preference(key: BeadSlotKey.self, value: proxy.frame(in: .named(NotchModel.space)))
                     })
             }
@@ -74,10 +81,8 @@ struct JobListView: View {
 
     @ViewBuilder
     private func list(_ jobs: [Job]) -> some View {
-        let rows = VStack(spacing: 0) {
-            ForEach(jobs) { job in
-                JobRowView(store: store, job: job, now: now) { onSelect(job) }
-            }
+        let rows = FluidHoverStack(items: jobs, onActivate: onSelect) { job, _ in
+            JobRowView(store: store, job: job, now: now) { onSelect(job) }
         }
         .padding(.horizontal, 6)
         .padding(.top, 6)

@@ -103,21 +103,19 @@ private struct NotchMenuCard: View {
     let close: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            ForEach(entries) { entry in
-                switch entry {
-                case .divider:
-                    Rectangle()
-                        .fill(.white.opacity(0.08))
-                        .frame(height: 1)
-                        .padding(.vertical, 4)
-                        .padding(.horizontal, 8)
-                case let .item(title, systemImage, checked, shortcut, action):
-                    NotchMenuRow(title: title, systemImage: systemImage, checked: checked, shortcut: shortcut) {
-                        close()
-                        action()
-                    }
-                }
+        FluidHoverStack(items: entries, cornerRadius: 7, isActivatable: { entry in
+            if case .item = entry { return true }
+            return false
+        }, onActivate: run) { entry, _ in
+            switch entry {
+            case .divider:
+                Rectangle()
+                    .fill(.white.opacity(0.08))
+                    .frame(height: 1)
+                    .padding(.vertical, 4)
+                    .padding(.horizontal, 8)
+            case let .item(title, systemImage, checked, shortcut, _):
+                NotchMenuRow(title: title, systemImage: systemImage, checked: checked, shortcut: shortcut) { run(entry) }
             }
         }
         .padding(5)
@@ -125,6 +123,12 @@ private struct NotchMenuCard: View {
         .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color(white: 0.13)))
         .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(.white.opacity(0.08)))
         .shadow(color: .black.opacity(0.5), radius: 16, y: 8)
+    }
+
+    private func run(_ entry: MenuEntry) {
+        guard case let .item(_, _, _, _, action) = entry else { return }
+        close()
+        action()
     }
 }
 
@@ -134,7 +138,6 @@ private struct NotchMenuRow: View {
     let checked: Bool?
     let shortcut: KeyEquivalent?
     let action: () -> Void
-    @State private var hovering = false
 
     var body: some View {
         Button(action: action) {
@@ -159,11 +162,7 @@ private struct NotchMenuRow: View {
             .padding(.horizontal, 8)
             .frame(height: 26)
             .contentShape(Rectangle())
-            .background(RoundedRectangle(cornerRadius: 7, style: .continuous).fill(.white.opacity(hovering ? 0.09 : 0)))
         }
         .buttonStyle(PressableRowStyle(pressedScale: 0.98))
-        .onHover { inside in
-            withAnimation(inside ? nil : .easeOut(duration: 0.12)) { hovering = inside }
-        }
     }
 }

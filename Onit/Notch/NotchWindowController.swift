@@ -13,6 +13,12 @@ final class NotchModel {
     var notchWidth: CGFloat = 180
     var notchHeight: CGFloat = 32
 
+    /// A task to open straight away, set when the badge in the right wing is clicked.
+    var deepLink: String?
+    var deepLinkToken = 0
+    /// Clicks on Bead in the panel header; each one makes it hop.
+    var beadPokes = 0
+
     /// Pointer position in screen coordinates, so Bead can look at it.
     var mouse: CGPoint?
     var windowFrame: CGRect = .zero
@@ -153,4 +159,5 @@ extension EnvironmentValues {
     @Entry var panelWidth: CGFloat = Metrics.popoverWidth
     /// True inside the notch, where controls are flat fills on black instead of Liquid Glass.
     @Entry var notchStyle = false
+    @Entry var notchModel: NotchModel?
 }

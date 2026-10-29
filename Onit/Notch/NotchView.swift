@@ -66,7 +66,13 @@ struct NotchView: View {
         let top = model.notchHeight
         return VStack(spacing: 0) {
             Color.clear.frame(height: model.notchHeight)
-            PopoverView(store: store, onDetailChange: { model.showingDetail = $0 }, resetToken: resetToken)
+            PopoverView(
+                store: store,
+                onDetailChange: { model.showingDetail = $0 },
+                resetToken: resetToken,
+                deepLink: (model.deepLink, model.deepLinkToken)
+            )
+                .environment(\.notchModel, model)
                 .environment(\.notchStyle, true)
                 .environment(\.panelWidth, NotchModel.panelWidth - 16)
                 .padding(.horizontal, 8)
@@ -90,12 +96,38 @@ struct NotchView: View {
     // MARK: - Collapsed
 
     private var collapsedTarget: some View {
-        Color.clear
-            .frame(width: collapsedWidth, height: model.notchHeight)
-            .contentShape(Rectangle())
-            .onTapGesture { withAnimation(.notchOpen) { model.isExpanded = true } }
-            .allowsHitTesting(!open)
-            .help("onit")
+        HStack(spacing: 0) {
+            Color.clear
+                .frame(width: collapsedWidth - wing)
+                .contentShape(Rectangle())
+                .onTapGesture { openPanel() }
+            // The badge goes straight to the task it's counting.
+            Color.clear
+                .frame(width: wing)
+                .contentShape(Rectangle())
+                .onTapGesture { openPanel(at: problemTask?.id) }
+        }
+        .frame(height: model.notchHeight)
+        .allowsHitTesting(!open)
+        .help("onit")
+    }
+
+    /// The task the right wing's badge is about, when it shows one.
+    private var problemTask: Job? {
+        let active = store.visibleJobs.filter { !$0.isHidden }
+        switch store.overallState {
+        case .failed: return active.first { if case .failed = $0.state { true } else { false } }
+        case .headsUp: return active.first { $0.schedule.hasOverlap }
+        default: return nil
+        }
+    }
+
+    private func openPanel(at taskID: String? = nil) {
+        if let taskID {
+            model.deepLink = taskID
+            model.deepLinkToken += 1
+        }
+        withAnimation(.notchOpen) { model.isExpanded = true }
     }
 
     /// The wings stay in use while a task's detail is open, since the header has no Bead then.
@@ -134,7 +166,8 @@ struct NotchView: View {
             mood: BeadMood(store.overallState),
             size: beadSize,
             runRange: inWing ? 8 : 3,
-            gaze: gaze(from: center)
+            gaze: gaze(from: center),
+            pokes: model.beadPokes
         )
         .offset(x: center.x - beadSize / 2, y: center.y - beadSize / 2)
         .animation(.notchOpen, value: inWing)

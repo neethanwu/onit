@@ -16,12 +16,10 @@ final class JobStore {
     private(set) var jobs: [Job] = []
     private(set) var lastUpdated: Date?
     private(set) var isRefreshing = false
-    private(set) var beadAngle: Double = MenuBarIcon.restingAngle
     var showHidden = false
 
     @ObservationIgnored let history = RunHistory()
     @ObservationIgnored private var pollTask: Task<Void, Never>?
-    @ObservationIgnored private var spinTask: Task<Void, Never>?
     private var userHidden: Set<String>
     private var userShown: Set<String>
 
@@ -64,7 +62,6 @@ final class JobStore {
         jobs = updated
         lastUpdated = .now
         isRefreshing = false
-        updateSpin()
     }
 
     private func backfillFromSystemLog() async {
@@ -246,27 +243,6 @@ final class JobStore {
             } catch {
                 NSLog("onit: could not change login item: \(error.localizedDescription)")
             }
-        }
-    }
-
-    // MARK: - Menu bar animation
-
-    private func updateSpin() {
-        let shouldSpin = overallState == .running && !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
-        if shouldSpin, spinTask == nil {
-            spinTask = Task { [weak self] in
-                let fps = 12.0
-                let step = 360.0 / (MenuBarIcon.lapSeconds * fps)
-                while !Task.isCancelled {
-                    try? await Task.sleep(for: .seconds(1 / fps))
-                    guard let self else { return }
-                    self.beadAngle = (self.beadAngle + step).truncatingRemainder(dividingBy: 360)
-                }
-            }
-        } else if !shouldSpin, let task = spinTask {
-            task.cancel()
-            spinTask = nil
-            beadAngle = MenuBarIcon.restingAngle
         }
     }
 }

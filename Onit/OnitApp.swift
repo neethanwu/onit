@@ -4,6 +4,7 @@ import SwiftUI
 struct OnitApp: App {
     @State private var store: JobStore
     @State private var display: DisplayController
+    @State private var menuBead: MenuBarBead
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
     init() {
@@ -14,6 +15,9 @@ struct OnitApp: App {
         DispatchQueue.main.async { display.start() }
         _store = State(initialValue: store)
         _display = State(initialValue: display)
+        let menuBead = MenuBarBead()
+        menuBead.follow(store)
+        _menuBead = State(initialValue: menuBead)
     }
 
     var body: some Scene {
@@ -21,7 +25,7 @@ struct OnitApp: App {
             PopoverView(store: store)
                 .environment(display)
         } label: {
-            Image(nsImage: MenuBarIcon.image(for: store.overallState, beadAngle: store.beadAngle))
+            Image(nsImage: MenuBarIcon.image(for: menuBead.mood, pose: menuBead.pose))
         }
         .menuBarExtraStyle(.window)
     }
