@@ -101,13 +101,18 @@ struct CopyButton: View {
                 withAnimation(.easeOut(duration: 0.2)) { copied = false }
             }
         } label: {
-            // Both labels are laid out at once so the capsule never changes size.
-            ZStack(alignment: .leading) {
-                label(title, icon: "doc.on.doc", iconColor: tint).opacity(copied ? 0 : 1)
-                label("Copied", icon: "checkmark", iconColor: .green).opacity(copied ? 1 : 0)
+            // The capsule hugs its label and animates its width; the fixed height keeps the panel still.
+            Group {
+                if copied {
+                    label("Copied", icon: "checkmark", iconColor: .green)
+                } else {
+                    label(title, icon: "doc.on.doc", iconColor: tint)
+                }
             }
+            .transition(.opacity)
             .padding(.horizontal, 10)
             .frame(height: 24)
+            .fixedSize()
             .glassEffect(.regular.interactive(), in: .capsule)
         }
         .buttonStyle(PressableRowStyle())
