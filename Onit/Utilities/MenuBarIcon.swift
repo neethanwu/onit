@@ -10,6 +10,7 @@ enum MenuBarIcon {
         let beadColor: NSColor? = switch state {
         case .failed: .systemRed
         case .headsUp: .systemOrange
+        case .running: .systemBlue
         default: nil
         }
         let alpha: CGFloat = state == .empty ? 0.4 : 1

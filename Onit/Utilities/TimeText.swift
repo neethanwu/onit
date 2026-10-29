@@ -58,6 +58,17 @@ enum TimeText {
         }
     }
 
+    /// "36m", "3h", "2d": for the notch wing, where there is room for three characters.
+    static func short(until date: Date, now: Date) -> String {
+        let seconds = max(0, date.timeIntervalSince(now))
+        switch seconds {
+        case ..<60: return "<1m"
+        case ..<3600: return "\(Int((seconds / 60).rounded(.up)))m"
+        case ..<86_400: return "\(Int((seconds / 3600).rounded()))h"
+        default: return "\(Int((seconds / 86_400).rounded()))d"
+        }
+    }
+
     /// "for 3 days", "for 2 hr"
     static func elapsed(since date: Date, now: Date) -> String {
         let seconds = max(0, now.timeIntervalSince(date))

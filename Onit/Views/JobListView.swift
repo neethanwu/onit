@@ -24,8 +24,14 @@ struct JobListView: View {
         }
     }
 
+    @Environment(\.beadNamespace) private var beadNamespace
+
     private var header: some View {
-        HStack(alignment: .center) {
+        HStack(alignment: .center, spacing: 10) {
+            if let beadNamespace {
+                BeadView(mood: BeadMood(store.overallState), size: 34)
+                    .matchedGeometryEffect(id: "bead", in: beadNamespace)
+            }
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
                     .font(.system(size: 15, weight: .semibold))
@@ -119,9 +125,22 @@ struct NextUpCard: View {
 
 struct MoreMenu: View {
     @Bindable var store: JobStore
+    @Environment(DisplayController.self) private var display
 
     var body: some View {
         Menu {
+            if display.notchAvailable {
+                Button {
+                    display.preference = display.preference == .notch ? .menuBar : .notch
+                } label: {
+                    if display.preference == .notch {
+                        Label("Show in Menu Bar", systemImage: "menubar.rectangle")
+                    } else {
+                        Label("Show in Notch", systemImage: "rectangle.topthird.inset.filled")
+                    }
+                }
+                Divider()
+            }
             Toggle(isOn: $store.showHidden) {
                 Label("Show Hidden Jobs (\(store.hiddenCount))", systemImage: "eye.slash")
             }

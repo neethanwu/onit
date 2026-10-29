@@ -2,8 +2,10 @@ import SwiftUI
 
 struct PopoverView: View {
     let store: JobStore
+    var onDetailChange: (Bool) -> Void = { _ in }
     @State private var selectedID: String?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.panelWidth) private var width
 
     var body: some View {
         TimelineView(.periodic(from: .now, by: 20)) { context in
@@ -21,7 +23,7 @@ struct PopoverView: View {
                 }
             }
         }
-        .frame(width: Metrics.popoverWidth)
+        .frame(width: width)
         .clipped()
         .focusable()
         .focusEffectDisabled()
@@ -31,6 +33,7 @@ struct PopoverView: View {
             navigate(to: nil, animated: false)
             return .handled
         }
+        .onChange(of: selectedID) { onDetailChange($1 != nil) }
         .task { await store.refresh() }
     }
 

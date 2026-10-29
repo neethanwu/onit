@@ -3,17 +3,23 @@ import SwiftUI
 @main
 struct OnitApp: App {
     @State private var store: JobStore
+    @State private var display: DisplayController
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
     init() {
         let store = JobStore()
+        let display = DisplayController(store: store)
         store.start()
+        // The notch window needs NSApp, which isn't ready until the app finishes launching.
+        DispatchQueue.main.async { display.start() }
         _store = State(initialValue: store)
+        _display = State(initialValue: display)
     }
 
     var body: some Scene {
-        MenuBarExtra {
+        MenuBarExtra(isInserted: Binding(get: { display.showsMenuBarIcon }, set: { _ in })) {
             PopoverView(store: store)
+                .environment(display)
         } label: {
             Image(nsImage: MenuBarIcon.image(for: store.overallState, beadAngle: store.beadAngle))
         }

@@ -71,6 +71,16 @@ struct LaunchdScheduleTests {
     }
 }
 
+struct TimeTextTests {
+    @Test func wingCountdown() {
+        let now = Date(timeIntervalSince1970: 0)
+        #expect(TimeText.short(until: now.addingTimeInterval(30), now: now) == "<1m")
+        #expect(TimeText.short(until: now.addingTimeInterval(36 * 60), now: now) == "36m")
+        #expect(TimeText.short(until: now.addingTimeInterval(3 * 3600), now: now) == "3h")
+        #expect(TimeText.short(until: now.addingTimeInterval(2 * 86_400), now: now) == "2d")
+    }
+}
+
 struct NamingTests {
     @Test func labels() {
         #expect(JobNaming.name(forLabel: "com.example.claude-retro") == "Claude Retro")
