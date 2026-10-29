@@ -3,7 +3,10 @@ import SwiftUI
 struct PopoverView: View {
     let store: JobStore
     var onDetailChange: (Bool) -> Void = { _ in }
+    /// Bumped by the notch when it closes, so it always reopens on the list.
+    var resetToken = 0
     @State private var selectedID: String?
+    @State private var menuHost = MenuHost()
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.panelWidth) private var width
 
@@ -24,6 +27,15 @@ struct PopoverView: View {
             }
         }
         .frame(width: width)
+        .background {
+            // A tap on any empty part of the panel closes an open "more" menu.
+            if menuHost.openID != nil {
+                Color.clear.contentShape(Rectangle()).onTapGesture {
+                    withAnimation(.easeIn(duration: 0.1)) { menuHost.openID = nil }
+                }
+            }
+        }
+        .environment(\.menuHost, menuHost)
         .clipped()
         .focusable()
         .focusEffectDisabled()
@@ -33,7 +45,16 @@ struct PopoverView: View {
             navigate(to: nil, animated: false)
             return .handled
         }
-        .onChange(of: selectedID) { onDetailChange($1 != nil) }
+        .onChange(of: selectedID) {
+            menuHost.openID = nil
+            onDetailChange($1 != nil)
+        }
+        .onChange(of: resetToken) {
+            menuHost.openID = nil
+            navigate(to: nil, animated: false)
+        }
+        // The menu bar panel also reopens on the list.
+        .onDisappear { navigate(to: nil, animated: false) }
         .task { await store.refresh() }
     }
 

@@ -17,6 +17,7 @@ struct NotchView: View {
     @Bindable var model: NotchModel
     @State private var contentHeight: CGFloat = 320
     @State private var headerSlot = CGRect.zero
+    @State private var resetToken = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var open: Bool { model.isExpanded }
@@ -49,6 +50,14 @@ struct NotchView: View {
         .coordinateSpace(.named(NotchModel.space))
         .onPreferenceChange(BeadSlotKey.self) { headerSlot = $0 }
         .environment(\.colorScheme, .dark)
+        .onChange(of: open) { _, isOpen in
+            guard !isOpen else { return }
+            // Go back to the list once the panel has folded away, so it always reopens there.
+            Task {
+                try? await Task.sleep(for: .seconds(0.4))
+                if !model.isExpanded { resetToken += 1 }
+            }
+        }
     }
 
     // MARK: - Panel
@@ -57,7 +66,7 @@ struct NotchView: View {
         let top = model.notchHeight
         return VStack(spacing: 0) {
             Color.clear.frame(height: model.notchHeight)
-            PopoverView(store: store) { model.showingDetail = $0 }
+            PopoverView(store: store, onDetailChange: { model.showingDetail = $0 }, resetToken: resetToken)
                 .environment(\.notchStyle, true)
                 .environment(\.panelWidth, NotchModel.panelWidth - 16)
                 .padding(.horizontal, 8)
@@ -89,24 +98,28 @@ struct NotchView: View {
             .help("onit")
     }
 
+    /// The wings stay in use while a task's detail is open, since the header has no Bead then.
+    private var usesWings: Bool { !open || model.showingDetail || headerSlot == .zero }
+
     private var wingStatus: some View {
-        WingStatus(store: store)
+        let shown = usesWings
+        return WingStatus(store: store)
             .frame(width: wing, height: model.notchHeight)
-            .scaleEffect(open ? 0.6 : 1)
-            .blur(radius: open && !reduceMotion ? 4 : 0)
-            .opacity(open ? 0 : 1)
-            .offset(x: (collapsedWidth - wing) / 2 - (open ? wing * 0.6 : 0))
-            .animation(open ? .easeIn(duration: 0.12) : .easeOut(duration: 0.22).delay(0.14), value: open)
+            .scaleEffect(shown ? 1 : 0.6)
+            .blur(radius: shown || reduceMotion ? 0 : 4)
+            .opacity(shown ? 1 : 0)
+            .offset(x: (collapsedWidth - wing) / 2 - (shown ? 0 : wing * 0.6))
+            .animation(shown ? .easeOut(duration: 0.22).delay(0.14) : .easeIn(duration: 0.12), value: shown)
             .allowsHitTesting(false)
     }
 
     // MARK: - Bead
 
-    private var beadSize: CGFloat { open ? NotchModel.headerBeadSize : NotchModel.wingBeadSize }
+    private var beadSize: CGFloat { usesWings ? NotchModel.wingBeadSize : NotchModel.headerBeadSize }
 
-    /// Bead's center in this view: the middle of the left wing, or the header's slot when open.
+    /// Bead's center in this view: the middle of the left wing, or the header's slot on the list.
     private var beadCenter: CGPoint {
-        if open, headerSlot != .zero {
+        if !usesWings {
             return CGPoint(x: headerSlot.midX, y: headerSlot.midY)
         }
         let leftEdge = (model.windowFrame.width - collapsedWidth) / 2
@@ -115,17 +128,16 @@ struct NotchView: View {
 
     private var bead: some View {
         let center = beadCenter
-        // A task's detail has a back button where Bead would sit, so Bead steps out of the way there.
-        let hidden = open && (model.showingDetail || headerSlot == .zero)
+        let inWing = usesWings
+        // On a task's detail Bead flies back up to its wing, and back down when you return to the list.
         return BeadView(
             mood: BeadMood(store.overallState),
             size: beadSize,
-            runRange: open ? 3 : 8,
+            runRange: inWing ? 8 : 3,
             gaze: gaze(from: center)
         )
         .offset(x: center.x - beadSize / 2, y: center.y - beadSize / 2)
-        .opacity(hidden ? 0 : 1)
-        .animation(.easeOut(duration: 0.15), value: hidden)
+        .animation(.notchOpen, value: inWing)
         .allowsHitTesting(false)
     }
 

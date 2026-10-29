@@ -12,6 +12,7 @@ struct JobListView: View {
         let jobs = store.visibleJobs
         VStack(spacing: 0) {
             header
+                .zIndex(1)
             if jobs.isEmpty {
                 EmptyListView(store: store)
             } else {
@@ -133,65 +134,57 @@ struct MoreMenu: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        Menu {
-            if display.notchAvailable {
-                Button {
-                    // Removing the menu bar icon doesn't close its panel, so close it before the notch takes over.
-                    if display.preference == .menuBar { dismiss() }
-                    display.preference = display.preference == .notch ? .menuBar : .notch
-                } label: {
-                    if display.preference == .notch {
-                        Label("Show in Menu Bar", systemImage: "menubar.rectangle")
-                    } else {
-                        Label("Show in Notch", systemImage: "rectangle.topthird.inset.filled")
-                    }
-                }
-                Divider()
-            }
-            Toggle(isOn: $store.showHidden) {
-                Label("Show Hidden Tasks (\(store.hiddenCount))", systemImage: "eye.slash")
-            }
-            Toggle(isOn: Binding(get: { store.launchesAtLogin }, set: { store.launchesAtLogin = $0 })) {
-                Label("Open at Login", systemImage: "power")
-            }
-            Divider()
-            Button {
-                NSApp.activate()
-                NSApp.orderFrontStandardAboutPanel(nil)
-            } label: {
-                Label("About onit", systemImage: "info.circle")
-            }
-            Divider()
-            Button {
-                NSApp.terminate(nil)
-            } label: {
-                Label("Quit onit", systemImage: "xmark.circle")
-            }
-            .keyboardShortcut("q")
-        } label: {
-            Image(systemName: "ellipsis")
+        MoreButton(id: "app") { entries }
+    }
+
+    private var entries: [MenuEntry] {
+        var entries: [MenuEntry] = []
+        if display.notchAvailable {
+            let toNotch = display.preference == .menuBar
+            entries.append(.item(
+                title: toNotch ? "Show in Notch" : "Show in Menu Bar",
+                systemImage: toNotch ? "rectangle.topthird.inset.filled" : "menubar.rectangle"
+            ) {
+                // Removing the menu bar icon doesn't close its panel, so close it before the notch takes over.
+                if toNotch { dismiss() }
+                display.preference = toNotch ? .notch : .menuBar
+            })
+            entries.append(.divider(id: "display"))
         }
-        .menuStyle(.button)
-        .menuIndicator(.hidden)
-        .buttonStyle(GlassCircleButtonStyle())
-        .fixedSize()
-        .help("More")
+        entries.append(.item(title: "Show Hidden Tasks (\(store.hiddenCount))", systemImage: "eye.slash", checked: store.showHidden) {
+            store.showHidden.toggle()
+        })
+        entries.append(.item(title: "Open at Login", systemImage: "power", checked: store.launchesAtLogin) {
+            store.launchesAtLogin.toggle()
+        })
+        entries.append(.divider(id: "about"))
+        entries.append(.item(title: "About onit", systemImage: "info.circle") {
+            NSApp.activate()
+            NSApp.orderFrontStandardAboutPanel(nil)
+        })
+        entries.append(.divider(id: "quit"))
+        entries.append(.item(title: "Quit onit", systemImage: "xmark.circle", shortcut: "q") {
+            NSApp.terminate(nil)
+        })
+        return entries
     }
 }
 
-/// Spins exactly one turn per refresh, around the glyph's own center, however fast the refresh is.
+/// One full turn per refresh, however fast the refresh is.
 struct RefreshButton: View {
     let store: JobStore
-    @State private var turns = 0.0
+    @State private var spins = 0
 
     var body: some View {
         Button {
-            withAnimation(.easeInOut(duration: 0.6)) { turns += 1 }
+            spins += 1
             Task { await store.refresh() }
         } label: {
+            // The system's own rotate effect for this symbol: the arrow turns around the circle's
+            // center with an eased start and stop, rather than the whole glyph wobbling.
             Image(systemName: "arrow.clockwise")
+                .symbolEffect(.rotate.clockwise.byLayer, options: .nonRepeating, value: spins)
                 .frame(width: 14, height: 14)
-                .rotationEffect(.degrees(turns * 360), anchor: .center)
         }
         .buttonStyle(GlassCircleButtonStyle())
         .help("Refresh")

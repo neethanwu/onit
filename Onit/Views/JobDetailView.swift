@@ -338,32 +338,29 @@ struct ActionBar: View {
                 .buttonStyle(GlassCapsuleButtonStyle())
             }
 
-            Menu {
-                if job.plistURL != nil {
-                    Button("Show in Finder") { store.revealDefinition(job) }
-                }
-                if job.logPath != nil {
-                    Button("Open Log") { store.openLog(job) }
-                }
-                Button("Copy Command") { store.copy(job.commandLine) }
-                Divider()
-                Button(job.isHidden ? "Show in List" : "Hide from List") {
-                    store.setHidden(job, hidden: !job.isHidden)
-                }
-            } label: {
-                Image(systemName: "ellipsis")
-            }
-            .menuStyle(.button)
-            .menuIndicator(.hidden)
-            .buttonStyle(GlassCircleButtonStyle(size: Metrics.actionHeight))
-            .fixedSize()
-            .help("More")
+            MoreButton(id: "task", size: Metrics.actionHeight, opensUpward: true) { entries }
         }
         .labelStyle(CompactLabelStyle())
         .padding(.horizontal, Metrics.edge)
         .padding(.top, 10)
         .padding(.bottom, 12)
         .overlay(alignment: .top) { Divider().opacity(0.6) }
+    }
+
+    private var entries: [MenuEntry] {
+        var entries: [MenuEntry] = []
+        if job.plistURL != nil {
+            entries.append(.item(title: "Show in Finder", systemImage: "folder") { store.revealDefinition(job) })
+        }
+        if job.logPath != nil {
+            entries.append(.item(title: "Open Log", systemImage: "doc.text") { store.openLog(job) })
+        }
+        entries.append(.item(title: "Copy Command", systemImage: "doc.on.doc") { store.copy(job.commandLine) })
+        entries.append(.divider(id: "hide"))
+        entries.append(.item(title: job.isHidden ? "Show in List" : "Hide from List", systemImage: job.isHidden ? "eye" : "eye.slash") {
+            store.setHidden(job, hidden: !job.isHidden)
+        })
+        return entries
     }
 
     @ViewBuilder

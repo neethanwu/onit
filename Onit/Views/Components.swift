@@ -156,14 +156,32 @@ struct GlassCircleButtonStyle: ButtonStyle {
     var size = Metrics.controlSize
 
     func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .font(.system(size: 12, weight: .semibold))
-            .foregroundStyle(.primary)
-            .frame(width: size, height: size)
-            .contentShape(Circle())
-            .surface(in: Circle(), pressed: configuration.isPressed)
-            .scaleEffect(configuration.isPressed ? 0.94 : 1)
-            .animation(.easeOut(duration: 0.16), value: configuration.isPressed)
+        PressBody(isPressed: configuration.isPressed, pressedScale: 0.88) { hovering in
+            configuration.label
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(.primary)
+                .frame(width: size, height: size)
+                .contentShape(Circle())
+                .surface(in: Circle(), pressed: configuration.isPressed, hovering: hovering)
+        }
+    }
+}
+
+/// Press and hover feedback shared by every button: it dips quickly when pressed and springs
+/// back with a little overshoot on release, and lightens while the pointer is over it.
+struct PressBody<Content: View>: View {
+    let isPressed: Bool
+    var pressedScale: CGFloat = 0.95
+    @ViewBuilder let content: (Bool) -> Content
+    @State private var hovering = false
+
+    var body: some View {
+        content(hovering)
+            .scaleEffect(isPressed ? pressedScale : 1)
+            .animation(isPressed ? .easeOut(duration: 0.1) : .spring(duration: 0.35, bounce: 0.45), value: isPressed)
+            .onHover { inside in
+                withAnimation(inside ? .easeOut(duration: 0.12) : .easeOut(duration: 0.2)) { hovering = inside }
+            }
     }
 }
 
@@ -173,16 +191,16 @@ struct GlassCapsuleButtonStyle: ButtonStyle {
     @Environment(\.isEnabled) private var isEnabled
 
     func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .font(.system(size: 12.5, weight: .medium))
-            .foregroundStyle(prominent ? AnyShapeStyle(.white) : AnyShapeStyle(.primary))
-            .frame(maxWidth: .infinity)
-            .frame(height: Metrics.actionHeight)
-            .contentShape(Capsule())
-            .surface(in: Capsule(), prominent: prominent, pressed: configuration.isPressed)
-            .opacity(isEnabled ? 1 : 0.6)
-            .scaleEffect(configuration.isPressed ? 0.97 : 1)
-            .animation(.easeOut(duration: 0.16), value: configuration.isPressed)
+        PressBody(isPressed: configuration.isPressed, pressedScale: 0.95) { hovering in
+            configuration.label
+                .font(.system(size: 12.5, weight: .medium))
+                .foregroundStyle(prominent ? AnyShapeStyle(.white) : AnyShapeStyle(.primary))
+                .frame(maxWidth: .infinity)
+                .frame(height: Metrics.actionHeight)
+                .contentShape(Capsule())
+                .surface(in: Capsule(), prominent: prominent, pressed: configuration.isPressed, hovering: hovering)
+                .opacity(isEnabled ? 1 : 0.6)
+        }
     }
 }
 
@@ -191,6 +209,7 @@ struct Surface<S: Shape>: ViewModifier {
     let shape: S
     var prominent = false
     var pressed = false
+    var hovering = false
     var notchFill: Color?
     @Environment(\.notchStyle) private var notchStyle
 
@@ -203,14 +222,15 @@ struct Surface<S: Shape>: ViewModifier {
     }
 
     private var flatFill: Color {
-        if prominent { return Color(red: 0.04, green: 0.52, blue: 1).opacity(pressed ? 0.8 : 1) }
-        return (notchFill ?? Color(white: 0.11)).mix(with: .white, by: pressed ? 0.08 : 0)
+        let lift = pressed ? 0.12 : hovering ? 0.07 : 0
+        if prominent { return Color(red: 0.04, green: 0.52, blue: 1).mix(with: .white, by: lift) }
+        return (notchFill ?? Color(white: 0.11)).mix(with: .white, by: lift)
     }
 }
 
 extension View {
-    func surface<S: Shape>(in shape: S, prominent: Bool = false, pressed: Bool = false, notchFill: Color? = nil) -> some View {
-        modifier(Surface(shape: shape, prominent: prominent, pressed: pressed, notchFill: notchFill))
+    func surface<S: Shape>(in shape: S, prominent: Bool = false, pressed: Bool = false, hovering: Bool = false, notchFill: Color? = nil) -> some View {
+        modifier(Surface(shape: shape, prominent: prominent, pressed: pressed, hovering: hovering, notchFill: notchFill))
     }
 }
 
@@ -226,10 +246,12 @@ struct CompactLabelStyle: LabelStyle {
 
 /// A press-to-scale style for plain rows.
 struct PressableRowStyle: ButtonStyle {
+    var pressedScale: CGFloat = 0.97
+
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .scaleEffect(configuration.isPressed ? 0.98 : 1)
-            .animation(.easeOut(duration: 0.16), value: configuration.isPressed)
+            .scaleEffect(configuration.isPressed ? pressedScale : 1)
+            .animation(configuration.isPressed ? .easeOut(duration: 0.1) : .spring(duration: 0.35, bounce: 0.4), value: configuration.isPressed)
     }
 }
 

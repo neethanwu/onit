@@ -77,14 +77,19 @@ struct BeadView: View {
     @State private var runSide: CGFloat = 1
     @State private var stride = false
     @State private var breathe = false
+    @State private var float = false
+    @State private var peek = false
+    @State private var drip = false
+    @State private var nudges = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         figure
-            .scaleEffect(x: breathe ? 1.03 : 1, y: breathe ? 1.07 : 1, anchor: .bottom)
+            .scaleEffect(x: breathe ? 1.05 : 1, y: breathe ? 1.12 : 1, anchor: .bottom)
             .offset(y: stride ? -size * 0.07 : 0)
+            .offset(y: float ? -size * 0.08 : size * 0.04)
             .offset(x: mood == .onIt ? runSide * runRange : 0)
-            .keyframeAnimator(initialValue: Nudge(), trigger: mood) { content, nudge in
+            .keyframeAnimator(initialValue: Nudge(), trigger: nudges) { content, nudge in
                 content.offset(x: nudge.x, y: nudge.y)
             } keyframes: { _ in
                 let hop: CGFloat = reduceMotion || mood != .headsUp ? 0 : -size * 0.2
@@ -128,7 +133,9 @@ struct BeadView: View {
                 Drop()
                     .fill(Color(red: 0.42, green: 0.77, blue: 1))
                     .frame(width: size * 0.2, height: size * 0.26)
-                    .offset(x: size * 0.48, y: -size * 0.5)
+                    // Every few seconds the drop runs down the side and a new one forms.
+                    .offset(x: size * (drip ? 0.5 : 0.48), y: size * (drip ? -0.3 : -0.5))
+                    .opacity(drip ? 0 : 1)
                     .transition(.opacity.animation(.easeOut(duration: 0.25).delay(0.3)))
             }
         }
@@ -141,8 +148,9 @@ struct BeadView: View {
         // A dozing Bead opens its eyes when the pointer comes close.
         let closed = mood == .dozing && gaze == nil
         return HStack(spacing: size * 0.32 - dot) {
-            ForEach(0..<2, id: \.self) { _ in
-                if closed {
+            ForEach(0..<2, id: \.self) { index in
+                // Now and then a dozing Bead opens one eye to check on things.
+                if closed && !(peek && index == 1) {
                     ClosedEye()
                         .stroke(mood.eyes, style: StrokeStyle(lineWidth: size * 0.08, lineCap: .round))
                         .frame(width: dot * 1.1, height: dot * 0.5)
@@ -163,21 +171,60 @@ struct BeadView: View {
     private func live() async {
         breathe = false
         stride = false
+        float = false
+        peek = false
+        drip = false
         glance = .zero
         guard !reduceMotion else { return }
+        nudges += 1
 
         await withTaskGroup(of: Void.self) { group in
             if mood != .dozing { group.addTask { await blinkLoop() } }
             switch mood {
             case .dozing:
-                await MainActor.run {
-                    withAnimation(.easeInOut(duration: 2).repeatForever(autoreverses: true)) { breathe = true }
-                }
+                withAnimation(.easeInOut(duration: 2.4).repeatForever(autoreverses: true)) { breathe = true }
+                group.addTask { await peekLoop() }
             case .onIt:
                 group.addTask { await runLoop() }
-            case .headsUp, .failed, .nothing:
+            case .headsUp:
+                group.addTask { await glanceLoop() }
+                group.addTask { await nudgeLoop(every: 7...11) }
+            case .failed:
+                group.addTask { await glanceLoop() }
+                group.addTask { await dripLoop() }
+                group.addTask { await nudgeLoop(every: 6...10) }
+            case .nothing:
+                withAnimation(.easeInOut(duration: 3).repeatForever(autoreverses: true)) { float = true }
                 group.addTask { await glanceLoop() }
             }
+        }
+    }
+
+    private func peekLoop() async {
+        while !Task.isCancelled {
+            try? await Task.sleep(for: .seconds(Double.random(in: 7...11)))
+            withAnimation(.easeOut(duration: 0.15)) { peek = true }
+            try? await Task.sleep(for: .seconds(0.8))
+            withAnimation(.easeIn(duration: 0.2)) { peek = false }
+        }
+    }
+
+    private func dripLoop() async {
+        while !Task.isCancelled {
+            try? await Task.sleep(for: .seconds(Double.random(in: 3.5...5)))
+            withAnimation(.easeIn(duration: 0.7)) { drip = true }
+            try? await Task.sleep(for: .seconds(0.9))
+            var reset = Transaction()
+            reset.disablesAnimations = true
+            withTransaction(reset) { drip = false }
+        }
+    }
+
+    /// Repeats the mood's arrival move now and then: heads-up hops, failed shivers.
+    private func nudgeLoop(every interval: ClosedRange<Double>) async {
+        while !Task.isCancelled {
+            try? await Task.sleep(for: .seconds(Double.random(in: interval)))
+            nudges += 1
         }
     }
 
