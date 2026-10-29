@@ -7,7 +7,7 @@
 <h1 align="center">onit</h1>
 
 <p align="center">
-  Keep an eye on everything your Mac does on a schedule, from the notch or the menu bar.
+  keep an eye on everything your mac does on a schedule, from the notch or the menu bar.
 </p>
 
 <p align="center">
