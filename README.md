@@ -37,7 +37,16 @@ onit puts all of it in one small panel, in plain language: what you have schedul
 
 ## Install
 
-There is no packaged release yet. Build it from source:
+1. Download **onit.dmg** from the [latest release](https://github.com/neethanwu/onit/releases/latest).
+2. Open it and drag **onit** into **Applications**.
+3. Open onit from Applications. It has no Dock icon: look for Bead beside the notch, or in the menu bar on a Mac without one.
+4. Optional: turn on **Open at Login** from the ··· menu.
+
+onit is signed with a Developer ID and notarized by Apple, so it opens without a Gatekeeper warning.
+
+Requirements: macOS 26 or later, on Apple silicon or Intel.
+
+### Build from source
 
 ```bash
 git clone https://github.com/neethanwu/onit.git
@@ -45,9 +54,7 @@ cd onit
 make run
 ```
 
-`make run` builds a release binary, wraps it in `onit.app`, signs it ad hoc and opens it. To keep it, move `onit.app` to `/Applications` and turn on **Open at Login** from the ··· menu.
-
-Requirements: macOS 26 or later, and Xcode 26 or later (Swift 6.2+).
+`make run` builds the app, wraps it in `onit.app`, signs it ad hoc and opens it. Building needs Xcode 26 or later (Swift 6.2+).
 
 ## Using onit
 
@@ -86,6 +93,7 @@ make run     # build, bundle, sign ad hoc and open onit.app
 make test    # run the unit tests
 make bundle  # build onit.app without opening it
 make sign    # sign with SIGN_IDENTITY (set it in .env for a Developer ID build)
+make release # sign, notarize and package onit.dmg (needs SIGN_IDENTITY and NOTARY_PROFILE in .env)
 make icon    # redraw the app icon and assets/icon.png from SupportFiles/generate-icon.swift
 ```
 
