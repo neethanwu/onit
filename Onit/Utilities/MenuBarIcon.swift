@@ -41,10 +41,10 @@ enum MenuBarIcon {
     private static func accessibilityLabel(for state: OverallState) -> String {
         switch state {
         case .empty: "onit: nothing scheduled"
-        case .ok: "onit: all jobs OK"
-        case .running: "onit: a job is running"
-        case .headsUp: "onit: a job needs a look"
-        case .failed: "onit: a job failed"
+        case .ok: "onit: all tasks OK"
+        case .running: "onit: a task is running"
+        case .headsUp: "onit: a task needs a look"
+        case .failed: "onit: a task failed"
         }
     }
 }

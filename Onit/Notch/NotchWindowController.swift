@@ -8,13 +8,20 @@ final class NotchModel {
         didSet { if oldValue != isExpanded { onExpandChange?(isExpanded) } }
     }
     @ObservationIgnored var onExpandChange: ((Bool) -> Void)?
-    /// Set by the popover so Escape steps back from a job's detail before closing the panel.
-    @ObservationIgnored var showingDetail = false
+    /// Set by the popover so Escape steps back from a task's detail before closing the panel.
+    var showingDetail = false
     var notchWidth: CGFloat = 180
     var notchHeight: CGFloat = 32
 
+    /// Pointer position in screen coordinates, so Bead can look at it.
+    var mouse: CGPoint?
+    var windowFrame: CGRect = .zero
+
     static let wingWidth: CGFloat = 44
     static let panelWidth: CGFloat = 380
+    static let wingBeadSize: CGFloat = 18
+    static let headerBeadSize: CGFloat = 34
+    static let space = "notch"
 }
 
 /// A borderless panel pinned over the notch. It is always the size of the open panel;
@@ -25,6 +32,7 @@ final class NotchWindowController {
     private let model = NotchModel()
     private var outsideClickMonitor: Any?
     private var escapeMonitor: Any?
+    private var mouseMonitors: [Any] = []
 
     private static let windowSize = CGSize(width: NotchModel.panelWidth + 40, height: 640)
 
@@ -59,18 +67,45 @@ final class NotchWindowController {
             x: geometry.notchMidX - Self.windowSize.width / 2,
             y: geometry.screenFrame.maxY - Self.windowSize.height
         )
-        panel.setFrame(CGRect(origin: origin, size: Self.windowSize), display: true)
+        let frame = CGRect(origin: origin, size: Self.windowSize)
+        panel.setFrame(frame, display: true)
+        model.windowFrame = frame
         panel.orderFrontRegardless()
+        trackPointer()
     }
 
     func hide() {
         collapse()
         panel.orderOut(nil)
+        mouseMonitors.forEach(NSEvent.removeMonitor)
+        mouseMonitors = []
+    }
+
+    /// Mouse moves anywhere on screen, so Bead can look at the pointer as it approaches.
+    private func trackPointer() {
+        guard mouseMonitors.isEmpty else { return }
+        let update: () -> Void = { [weak self] in
+            guard let self else { return }
+            let location = NSEvent.mouseLocation
+            if let last = model.mouse, hypot(last.x - location.x, last.y - location.y) < 2 { return }
+            model.mouse = location
+        }
+        if let global = NSEvent.addGlobalMonitorForEvents(matching: [.mouseMoved, .leftMouseDragged], handler: { _ in
+            MainActor.assumeIsolated { update() }
+        }) {
+            mouseMonitors.append(global)
+        }
+        if let local = NSEvent.addLocalMonitorForEvents(matching: [.mouseMoved, .leftMouseDragged], handler: { event in
+            MainActor.assumeIsolated { update() }
+            return event
+        }) {
+            mouseMonitors.append(local)
+        }
     }
 
     func collapse() {
         guard model.isExpanded else { return }
-        withAnimation(.notchSpring) { model.isExpanded = false }
+        withAnimation(.notchClose) { model.isExpanded = false }
     }
 
     private func expandChanged(_ expanded: Bool) {
@@ -109,11 +144,13 @@ final class FirstClickHostingView<Content: View>: NSHostingView<Content> {
 }
 
 extension Animation {
-    static let notchSpring = Animation.spring(duration: 0.35, bounce: 0)
+    /// Opening has a little give, like the island it's borrowed from; closing is quicker and settles flat.
+    static let notchOpen = Animation.spring(duration: 0.45, bounce: 0.18)
+    static let notchClose = Animation.spring(duration: 0.34, bounce: 0)
 }
 
 extension EnvironmentValues {
-    /// Set inside the notch so the list header shows Bead and can share its geometry with the wing.
-    @Entry var beadNamespace: Namespace.ID? = nil
     @Entry var panelWidth: CGFloat = Metrics.popoverWidth
+    /// True inside the notch, where controls are flat fills on black instead of Liquid Glass.
+    @Entry var notchStyle = false
 }

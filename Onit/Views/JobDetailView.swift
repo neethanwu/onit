@@ -25,7 +25,7 @@ struct JobDetailView: View {
                 Image(systemName: "chevron.left")
             }
             .buttonStyle(GlassCircleButtonStyle())
-            .help("All jobs")
+            .help("All tasks")
 
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 7) {

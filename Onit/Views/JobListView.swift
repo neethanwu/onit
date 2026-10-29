@@ -24,13 +24,17 @@ struct JobListView: View {
         }
     }
 
-    @Environment(\.beadNamespace) private var beadNamespace
+    @Environment(\.notchStyle) private var notchStyle
 
     private var header: some View {
         HStack(alignment: .center, spacing: 10) {
-            if let beadNamespace {
-                BeadView(mood: BeadMood(store.overallState), size: 34)
-                    .matchedGeometryEffect(id: "bead", in: beadNamespace)
+            if notchStyle {
+                // The notch draws Bead itself and flies it here from the wing; this only holds its place.
+                Color.clear
+                    .frame(width: NotchModel.headerBeadSize, height: NotchModel.headerBeadSize)
+                    .background(GeometryReader { proxy in
+                        Color.clear.preference(key: BeadSlotKey.self, value: proxy.frame(in: .named(NotchModel.space)))
+                    })
             }
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
@@ -54,17 +58,17 @@ struct JobListView: View {
     private var title: String {
         switch store.overallState {
         case .empty: return "onit"
-        case .failed: return store.failedCount == 1 ? "1 job failed" : "\(store.failedCount) jobs failed"
-        case .headsUp: return store.overlapCount == 1 ? "1 job needs a look" : "\(store.overlapCount) jobs need a look"
-        case .running: return store.activeRunCount == 1 ? "1 job running" : "\(store.activeRunCount) jobs running"
+        case .failed: return store.failedCount == 1 ? "1 task failed" : "\(store.failedCount) tasks failed"
+        case .headsUp: return store.overlapCount == 1 ? "1 task needs a look" : "\(store.overlapCount) tasks need a look"
+        case .running: return store.activeRunCount == 1 ? "1 task running" : "\(store.activeRunCount) tasks running"
         case .ok: return "All good"
         }
     }
 
     private var subtitle: Text {
         let count = store.activeCount
-        guard count > 0 else { return Text(store.jobs.isEmpty ? "Looking for jobs…" : "Nothing to watch") }
-        return Text(count == 1 ? "Watching 1 job" : "Watching \(count) jobs")
+        guard count > 0 else { return Text(store.jobs.isEmpty ? "Looking for tasks…" : "Nothing to watch") }
+        return Text(count == 1 ? "Watching 1 task" : "Watching \(count) tasks")
     }
 
     @ViewBuilder
@@ -126,11 +130,14 @@ struct NextUpCard: View {
 struct MoreMenu: View {
     @Bindable var store: JobStore
     @Environment(DisplayController.self) private var display
+    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         Menu {
             if display.notchAvailable {
                 Button {
+                    // Removing the menu bar icon doesn't close its panel, so close it before the notch takes over.
+                    if display.preference == .menuBar { dismiss() }
                     display.preference = display.preference == .notch ? .menuBar : .notch
                 } label: {
                     if display.preference == .notch {
@@ -142,7 +149,7 @@ struct MoreMenu: View {
                 Divider()
             }
             Toggle(isOn: $store.showHidden) {
-                Label("Show Hidden Jobs (\(store.hiddenCount))", systemImage: "eye.slash")
+                Label("Show Hidden Tasks (\(store.hiddenCount))", systemImage: "eye.slash")
             }
             Toggle(isOn: Binding(get: { store.launchesAtLogin }, set: { store.launchesAtLogin = $0 })) {
                 Label("Open at Login", systemImage: "power")
@@ -208,10 +215,16 @@ struct EmptyListView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
             if store.hiddenCount > 0 {
-                Button("Show \(store.hiddenCount) hidden jobs") { store.showHidden = true }
-                    .buttonStyle(.glass)
-                    .buttonBorderShape(.capsule)
-                    .controlSize(.small)
+                Button {
+                    store.showHidden = true
+                } label: {
+                    Text("Show \(store.hiddenCount) hidden tasks")
+                        .font(.system(size: 11.5, weight: .medium))
+                        .padding(.horizontal, 12)
+                        .frame(height: 24)
+                        .surface(in: Capsule())
+                }
+                .buttonStyle(PressableRowStyle())
             }
         }
         .padding(.horizontal, 28)

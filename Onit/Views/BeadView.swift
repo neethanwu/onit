@@ -38,49 +38,75 @@ enum BeadMood: Equatable {
         }
     }
 
-    /// Dozing and on it keep moving; the others only move once when they arrive.
-    var loops: Bool { self == .dozing || self == .onIt }
+    /// Where Bead's eyes wander when nobody is pointing at it. Unit vectors, y down.
+    fileprivate var glances: [CGVector] {
+        let left = CGVector(dx: -1, dy: 0), right = CGVector(dx: 1, dy: 0)
+        let upLeft = CGVector(dx: -0.8, dy: -0.7), upRight = CGVector(dx: 0.8, dy: -0.7)
+        let down = CGVector(dx: 0, dy: 0.9), center = CGVector.zero
+        switch self {
+        case .headsUp: return [left, upLeft, center, right, upRight, center]
+        case .failed: return [down, CGVector(dx: -0.6, dy: 0.8), down, CGVector(dx: 0.6, dy: 0.8)]
+        case .nothing: return [left, center, right, center, CGVector(dx: 0, dy: -0.8)]
+        case .dozing, .onIt: return [center]
+        }
+    }
+
+    /// How long Bead holds each glance; a worried Bead looks around faster than a sad one.
+    fileprivate var glanceHold: ClosedRange<Double> {
+        switch self {
+        case .headsUp: 0.9...1.8
+        case .failed: 2.0...3.5
+        default: 1.6...3.0
+        }
+    }
 }
 
 /// The notch mascot: a round body, two eyes and at most one sign.
+/// It always has a little life in it: blinking, glancing around, breathing or running,
+/// and when the pointer comes near it looks at the pointer instead.
 struct BeadView: View {
     let mood: BeadMood
     let size: CGFloat
-    /// In the wing Bead rolls back and forth; in the header it sways in place.
-    var travel: CGFloat = 0
+    /// Half the distance Bead runs back and forth while a task runs.
+    var runRange: CGFloat = 0
+    /// Direction to the pointer when it's close, scaled 0...1; nil lets Bead look around on its own.
+    var gaze: CGVector?
 
+    @State private var blink = false
+    @State private var glance = CGVector.zero
+    @State private var runSide: CGFloat = 1
+    @State private var stride = false
+    @State private var breathe = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1 / 30, paused: reduceMotion || !mood.loops)) { context in
-            let t = context.date.timeIntervalSinceReferenceDate
-            figure
-                .scaleEffect(breath(t))
-                .offset(x: roll(t))
-                .rotationEffect(.degrees(reduceMotion || mood != .onIt ? 0 : Double(roll(t) / max(travel, 2)) * 8))
-        }
-        .keyframeAnimator(initialValue: Nudge(), trigger: mood) { content, nudge in
-            content.offset(x: nudge.x, y: nudge.y)
-        } keyframes: { _ in
-            let hop: CGFloat = reduceMotion || mood != .headsUp ? 0 : -3
-            let shake: CGFloat = reduceMotion || mood != .failed ? 0 : 1.5
-            KeyframeTrack(\.y) {
-                CubicKeyframe(hop, duration: 0.14)
-                SpringKeyframe(0, duration: 0.3, spring: .init(duration: 0.4, bounce: 0.3))
+        figure
+            .scaleEffect(x: breathe ? 1.03 : 1, y: breathe ? 1.07 : 1, anchor: .bottom)
+            .offset(y: stride ? -size * 0.07 : 0)
+            .offset(x: mood == .onIt ? runSide * runRange : 0)
+            .keyframeAnimator(initialValue: Nudge(), trigger: mood) { content, nudge in
+                content.offset(x: nudge.x, y: nudge.y)
+            } keyframes: { _ in
+                let hop: CGFloat = reduceMotion || mood != .headsUp ? 0 : -size * 0.2
+                let shake: CGFloat = reduceMotion || mood != .failed ? 0 : size * 0.09
+                KeyframeTrack(\.y) {
+                    CubicKeyframe(hop, duration: 0.14)
+                    SpringKeyframe(0, duration: 0.3, spring: .init(duration: 0.4, bounce: 0.3))
+                }
+                KeyframeTrack(\.x) {
+                    for value in [shake, -shake, shake, -shake, shake, 0] {
+                        LinearKeyframe(value, duration: 0.05)
+                    }
+                }
             }
-            KeyframeTrack(\.x) {
-                LinearKeyframe(shake, duration: 0.05)
-                LinearKeyframe(-shake, duration: 0.05)
-                LinearKeyframe(shake, duration: 0.05)
-                LinearKeyframe(-shake, duration: 0.05)
-                LinearKeyframe(shake, duration: 0.05)
-                LinearKeyframe(0, duration: 0.05)
-            }
-        }
-        .frame(width: size, height: size)
-        .animation(.easeOut(duration: 0.25), value: mood)
-        .accessibilityHidden(true)
+            .frame(width: size, height: size)
+            .animation(.easeOut(duration: 0.25), value: mood)
+            .animation(.spring(duration: 0.25, bounce: 0), value: gaze)
+            .task(id: mood) { await live() }
+            .accessibilityHidden(true)
     }
+
+    // MARK: - Drawing
 
     private var figure: some View {
         ZStack {
@@ -88,12 +114,12 @@ struct BeadView: View {
                 SpeedLines()
                     .stroke(mood.body.opacity(0.55), style: StrokeStyle(lineWidth: size * 0.07, lineCap: .round))
                     .frame(width: size * 0.3, height: size * 0.42)
-                    .offset(x: -size * 0.62)
+                    .offset(x: -runSide * size * 0.62)
                     .transition(.opacity)
             }
             if mood == .nothing {
                 Circle()
-                    .strokeBorder(.white.opacity(0.4), style: StrokeStyle(lineWidth: size * 0.06, dash: [size * 0.09, size * 0.1]))
+                    .strokeBorder(.white.opacity(0.4), style: StrokeStyle(lineWidth: max(1, size * 0.06), dash: [size * 0.09, size * 0.1]))
             } else {
                 Circle().fill(mood.body)
             }
@@ -109,34 +135,84 @@ struct BeadView: View {
         .frame(width: size, height: size)
     }
 
-    @ViewBuilder
     private var eyes: some View {
-        let gap = size * 0.32
         let dot = size * 0.17
-        let lookAhead = mood == .onIt ? size * 0.05 : 0
-        HStack(spacing: gap - dot) {
+        let look = gaze ?? glance
+        // A dozing Bead opens its eyes when the pointer comes close.
+        let closed = mood == .dozing && gaze == nil
+        return HStack(spacing: size * 0.32 - dot) {
             ForEach(0..<2, id: \.self) { _ in
-                if mood == .dozing {
+                if closed {
                     ClosedEye()
                         .stroke(mood.eyes, style: StrokeStyle(lineWidth: size * 0.08, lineCap: .round))
                         .frame(width: dot * 1.1, height: dot * 0.5)
                 } else {
-                    Circle().fill(mood.eyes).frame(width: dot, height: dot)
+                    Capsule()
+                        .fill(mood.eyes)
+                        .frame(width: dot, height: blink ? dot * 0.15 : dot)
                 }
             }
         }
-        .offset(x: lookAhead, y: -size * 0.05)
+        .frame(height: dot)
+        .offset(x: look.dx * size * 0.08, y: -size * 0.05 + look.dy * size * 0.07)
     }
 
-    private func breath(_ t: TimeInterval) -> CGFloat {
-        guard mood == .dozing, !reduceMotion else { return 1 }
-        return 1 + 0.02 * (1 - cos(2 * .pi * t / 4))
+    // MARK: - Life
+
+    /// Runs Bead's idle behaviour for the current mood until the mood changes.
+    private func live() async {
+        breathe = false
+        stride = false
+        glance = .zero
+        guard !reduceMotion else { return }
+
+        await withTaskGroup(of: Void.self) { group in
+            if mood != .dozing { group.addTask { await blinkLoop() } }
+            switch mood {
+            case .dozing:
+                await MainActor.run {
+                    withAnimation(.easeInOut(duration: 2).repeatForever(autoreverses: true)) { breathe = true }
+                }
+            case .onIt:
+                group.addTask { await runLoop() }
+            case .headsUp, .failed, .nothing:
+                group.addTask { await glanceLoop() }
+            }
+        }
     }
 
-    private func roll(_ t: TimeInterval) -> CGFloat {
-        guard mood == .onIt, !reduceMotion else { return 0 }
-        let reach = travel > 0 ? travel : 2
-        return reach * sin(2 * .pi * t / 2.4)
+    private func blinkLoop() async {
+        while !Task.isCancelled {
+            try? await Task.sleep(for: .seconds(Double.random(in: 2.4...5.2)))
+            let times = Double.random(in: 0...1) < 0.2 ? 2 : 1
+            for _ in 0..<times {
+                withAnimation(.easeIn(duration: 0.06)) { blink = true }
+                try? await Task.sleep(for: .seconds(0.09))
+                withAnimation(.easeOut(duration: 0.1)) { blink = false }
+                try? await Task.sleep(for: .seconds(0.14))
+            }
+        }
+    }
+
+    private func glanceLoop() async {
+        var index = 0
+        let glances = mood.glances
+        while !Task.isCancelled {
+            try? await Task.sleep(for: .seconds(Double.random(in: mood.glanceHold)))
+            index = (index + 1) % glances.count
+            withAnimation(.spring(duration: mood == .failed ? 0.6 : 0.3, bounce: 0)) { glance = glances[index] }
+        }
+    }
+
+    /// Back and forth along the wing, looking where it's going, with a small jog in each step.
+    private func runLoop() async {
+        withAnimation(.easeInOut(duration: 0.16).repeatForever(autoreverses: true)) { stride = true }
+        let leg = 1.1
+        while !Task.isCancelled {
+            withAnimation(.easeInOut(duration: leg)) { runSide = -runSide }
+            withAnimation(.spring(duration: 0.2, bounce: 0)) { glance = CGVector(dx: runSide, dy: 0) }
+            try? await Task.sleep(for: .seconds(leg))
+        }
     }
 
     private struct Nudge {

@@ -113,7 +113,7 @@ struct CopyButton: View {
             .padding(.horizontal, 10)
             .frame(height: 24)
             .fixedSize()
-            .glassEffect(.regular.interactive(), in: .capsule)
+            .surface(in: Capsule(), notchFill: Color(white: 0.17))
         }
         .buttonStyle(PressableRowStyle())
     }
@@ -161,7 +161,7 @@ struct GlassCircleButtonStyle: ButtonStyle {
             .foregroundStyle(.primary)
             .frame(width: size, height: size)
             .contentShape(Circle())
-            .glassEffect(.regular.interactive(), in: .circle)
+            .surface(in: Circle(), pressed: configuration.isPressed)
             .scaleEffect(configuration.isPressed ? 0.94 : 1)
             .animation(.easeOut(duration: 0.16), value: configuration.isPressed)
     }
@@ -179,10 +179,38 @@ struct GlassCapsuleButtonStyle: ButtonStyle {
             .frame(maxWidth: .infinity)
             .frame(height: Metrics.actionHeight)
             .contentShape(Capsule())
-            .glassEffect(prominent ? .regular.tint(.accentColor).interactive() : .regular.interactive(), in: .capsule)
+            .surface(in: Capsule(), prominent: prominent, pressed: configuration.isPressed)
             .opacity(isEnabled ? 1 : 0.6)
             .scaleEffect(configuration.isPressed ? 0.97 : 1)
             .animation(.easeOut(duration: 0.16), value: configuration.isPressed)
+    }
+}
+
+/// Liquid Glass in the menu bar popover; flat fills on the notch's black, where glass has nothing to refract.
+struct Surface<S: Shape>: ViewModifier {
+    let shape: S
+    var prominent = false
+    var pressed = false
+    var notchFill: Color?
+    @Environment(\.notchStyle) private var notchStyle
+
+    func body(content: Content) -> some View {
+        if notchStyle {
+            content.background(shape.fill(flatFill))
+        } else {
+            content.glassEffect(prominent ? .regular.tint(.accentColor).interactive() : .regular.interactive(), in: shape)
+        }
+    }
+
+    private var flatFill: Color {
+        if prominent { return Color(red: 0.04, green: 0.52, blue: 1).opacity(pressed ? 0.8 : 1) }
+        return (notchFill ?? Color(white: 0.11)).mix(with: .white, by: pressed ? 0.08 : 0)
+    }
+}
+
+extension View {
+    func surface<S: Shape>(in shape: S, prominent: Bool = false, pressed: Bool = false, notchFill: Color? = nil) -> some View {
+        modifier(Surface(shape: shape, prominent: prominent, pressed: pressed, notchFill: notchFill))
     }
 }
 
@@ -207,12 +235,18 @@ struct PressableRowStyle: ButtonStyle {
 
 struct CardBackground: ViewModifier {
     var tint: Color?
+    @Environment(\.notchStyle) private var notchStyle
 
     func body(content: Content) -> some View {
         content.background(
-            RoundedRectangle(cornerRadius: Metrics.cardRadius, style: .continuous)
-                .fill(tint.map { AnyShapeStyle($0.opacity(0.14)) } ?? AnyShapeStyle(.quaternary.opacity(0.5)))
+            RoundedRectangle(cornerRadius: notchStyle ? 16 : Metrics.cardRadius, style: .continuous)
+                .fill(fill)
         )
+    }
+
+    private var fill: AnyShapeStyle {
+        if let tint { return AnyShapeStyle(tint.opacity(0.14)) }
+        return notchStyle ? AnyShapeStyle(Color(white: 0.08)) : AnyShapeStyle(.quaternary.opacity(0.5))
     }
 }
 
