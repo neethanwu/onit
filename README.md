@@ -12,7 +12,10 @@
 
 <p align="center">
   <a href="https://github.com/neethanwu/onit/releases/latest/download/onit.dmg">
-    <img src="https://img.shields.io/badge/download-onit.dmg-black" alt="download onit.dmg">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="assets/download-dark.svg">
+      <img src="assets/download-light.svg" height="48" alt="download for macos">
+    </picture>
   </a>
 </p>
 
