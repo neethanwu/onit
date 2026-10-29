@@ -5,7 +5,7 @@ struct JobListView: View {
     let now: Date
     let onSelect: (Job) -> Void
 
-    private let rowHeight: CGFloat = 54
+    private let rowHeight: CGFloat = 46
     private let maxVisibleRows = 7
 
     var body: some View {
@@ -17,7 +17,7 @@ struct JobListView: View {
             } else {
                 if let next = store.nextUp(now: now) {
                     NextUpCard(job: next.job, date: next.date, now: now)
-                        .padding(.horizontal, 8)
+                        .padding(.horizontal, 6)
                 }
                 list(jobs)
             }
@@ -28,31 +28,21 @@ struct JobListView: View {
         HStack(alignment: .center) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
-                    .font(.system(size: 22, weight: .bold))
-                    .tracking(-0.4)
+                    .font(.system(size: 17, weight: .bold))
+                    .tracking(-0.2)
                 subtitle
-                    .font(.system(size: 13))
+                    .font(.system(size: 12))
                     .foregroundStyle(.secondary)
             }
             Spacer()
             HStack(spacing: 6) {
-                Button {
-                    Task { await store.refresh() }
-                } label: {
-                    Image(systemName: "arrow.clockwise")
-                        .symbolEffect(.rotate, isActive: store.isRefreshing)
-                        .frame(width: 16, height: 16)
-                }
-                .buttonStyle(.glass)
-                .buttonBorderShape(.circle)
-                .help("Refresh")
-
+                RefreshButton(store: store)
                 MoreMenu(store: store)
             }
         }
         .padding(.horizontal, Metrics.edge)
-        .padding(.top, 18)
-        .padding(.bottom, 14)
+        .padding(.top, 14)
+        .padding(.bottom, 10)
     }
 
     private var title: String {
@@ -80,12 +70,13 @@ struct JobListView: View {
                 JobRowView(store: store, job: job, now: now) { onSelect(job) }
             }
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 10)
+        .padding(.horizontal, 6)
+        .padding(.top, 6)
+        .padding(.bottom, 8)
 
         if jobs.count > maxVisibleRows {
             ScrollView { rows }
-                .frame(height: rowHeight * CGFloat(maxVisibleRows) + 20)
+                .frame(height: rowHeight * CGFloat(maxVisibleRows) + 14)
                 .scrollIndicators(.automatic)
         } else {
             rows
@@ -102,28 +93,28 @@ struct NextUpCard: View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
                 Text("Next up")
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(.system(size: 10, weight: .semibold))
                     .textCase(.uppercase)
                     .tracking(0.6)
                     .foregroundStyle(.tertiary)
                 Text(job.name)
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.system(size: 13, weight: .semibold))
                     .lineLimit(1)
             }
             Spacer()
             VStack(alignment: .trailing, spacing: 1) {
                 Text(TimeText.until(date, now: now))
-                    .font(.system(size: 17, weight: .semibold))
+                    .font(.system(size: 14, weight: .semibold))
                     .contentTransition(.numericText())
                 Text("at \(TimeText.clock(date))")
-                    .font(.system(size: 12))
+                    .font(.system(size: 11))
                     .foregroundStyle(.secondary)
             }
             .monospacedDigit()
             .animation(.easeOut(duration: 0.25), value: TimeText.until(date, now: now))
         }
         .padding(.horizontal, 10)
-        .padding(.vertical, 12)
+        .padding(.vertical, 9)
         .card()
     }
 }
@@ -155,13 +146,31 @@ struct MoreMenu: View {
             .keyboardShortcut("q")
         } label: {
             Image(systemName: "ellipsis")
-                .frame(width: 16, height: 16)
         }
         .menuStyle(.button)
         .menuIndicator(.hidden)
-        .buttonStyle(.glass)
-        .buttonBorderShape(.circle)
+        .buttonStyle(GlassCircleButtonStyle())
         .fixedSize()
+        .help("More")
+    }
+}
+
+/// Spins exactly one turn per refresh, around the glyph's own center, however fast the refresh is.
+struct RefreshButton: View {
+    let store: JobStore
+    @State private var turns = 0.0
+
+    var body: some View {
+        Button {
+            withAnimation(.easeInOut(duration: 0.6)) { turns += 1 }
+            Task { await store.refresh() }
+        } label: {
+            Image(systemName: "arrow.clockwise")
+                .frame(width: 14, height: 14)
+                .rotationEffect(.degrees(turns * 360), anchor: .center)
+        }
+        .buttonStyle(GlassCircleButtonStyle())
+        .help("Refresh")
     }
 }
 
@@ -171,12 +180,12 @@ struct EmptyListView: View {
     var body: some View {
         VStack(spacing: 14) {
             OrbitMark()
-                .frame(width: 64, height: 64)
+                .frame(width: 52, height: 52)
             VStack(spacing: 5) {
                 Text("Nothing scheduled yet")
-                    .font(.system(size: 17, weight: .bold))
+                    .font(.system(size: 15, weight: .bold))
                 Text("When you or your agent sets up something that runs on a schedule, it shows up here.")
-                    .font(.system(size: 13))
+                    .font(.system(size: 12))
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
@@ -188,9 +197,9 @@ struct EmptyListView: View {
                     .controlSize(.small)
             }
         }
-        .padding(.horizontal, 36)
-        .padding(.top, 4)
-        .padding(.bottom, 30)
+        .padding(.horizontal, 28)
+        .padding(.top, 2)
+        .padding(.bottom, 22)
     }
 }
 

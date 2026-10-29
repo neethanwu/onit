@@ -10,7 +10,7 @@ struct JobDetailView: View {
         VStack(spacing: 0) {
             header
             banner
-                .padding(.horizontal, 8)
+                .padding(.horizontal, 6)
             facts
             if !job.isAlwaysOn {
                 RecentRunsSection(store: store, job: job, now: now)
@@ -20,21 +20,18 @@ struct JobDetailView: View {
     }
 
     private var header: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 8) {
             Button(action: onBack) {
                 Image(systemName: "chevron.left")
-                    .fontWeight(.semibold)
-                    .frame(width: 16, height: 16)
             }
-            .buttonStyle(.glass)
-            .buttonBorderShape(.circle)
+            .buttonStyle(GlassCircleButtonStyle())
             .help("All jobs")
 
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 7) {
                     Text(job.name)
-                        .font(.system(size: 20, weight: .bold))
-                        .tracking(-0.4)
+                        .font(.system(size: 16, weight: .bold))
+                        .tracking(-0.2)
                         .lineLimit(1)
                     SourceTag(source: job.source)
                 }
@@ -43,17 +40,17 @@ struct JobDetailView: View {
                         .scaleEffect(0.85)
                         .frame(width: 8)
                     statusLine
-                        .font(.system(size: 12))
+                        .font(.system(size: 11.5))
                         .foregroundStyle(.secondary)
                         .monospacedDigit()
                 }
             }
             Spacer(minLength: 0)
         }
-        .padding(.leading, 12)
+        .padding(.leading, 10)
         .padding(.trailing, Metrics.edge)
-        .padding(.top, 16)
-        .padding(.bottom, 14)
+        .padding(.top, 12)
+        .padding(.bottom, 10)
     }
 
     private var statusLine: Text {
@@ -112,8 +109,8 @@ struct JobDetailView: View {
             .help(job.commandLine)
         }
         .padding(.horizontal, Metrics.edge)
-        .padding(.top, 10)
-        .padding(.bottom, 4)
+        .padding(.top, 8)
+        .padding(.bottom, 2)
     }
 }
 
@@ -131,18 +128,18 @@ struct ProblemCard: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .top, spacing: 10) {
                 Image(systemName: "exclamationmark.circle")
-                    .font(.system(size: 15, weight: .medium))
+                    .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(.red)
                 VStack(alignment: .leading, spacing: 3) {
                     Text(streak > 1 ? "Didn't finish \(streak) times in a row" : "Didn't finish last time")
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(.system(size: 12, weight: .semibold))
                     Text(reason(explanation))
-                        .font(.system(size: 12))
+                        .font(.system(size: 11.5))
                         .foregroundStyle(.primary.opacity(0.85))
                         .fixedSize(horizontal: false, vertical: true)
                     if let raw = explanation.rawLine {
                         Text(raw)
-                            .font(.system(size: 10.5, design: .monospaced))
+                            .font(.system(size: 10, design: .monospaced))
                             .foregroundStyle(.secondary)
                             .lineLimit(2)
                             .textSelection(.enabled)
@@ -155,12 +152,12 @@ struct ProblemCard: View {
                     FixPrompt.forFailure(job, explanation: explanation, logTail: tail)
                 }, store: store)
                 Text("With the error and log")
-                    .font(.system(size: 11.5))
+                    .font(.system(size: 11))
                     .foregroundStyle(.secondary)
             }
-            .padding(.leading, 25)
+            .padding(.leading, 23)
         }
-        .padding(12)
+        .padding(10)
         .frame(maxWidth: .infinity, alignment: .leading)
         .card(tint: .red)
     }
@@ -179,13 +176,13 @@ struct OverlapCard: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .top, spacing: 10) {
                 Image(systemName: "exclamationmark.triangle")
-                    .font(.system(size: 14, weight: .medium))
+                    .font(.system(size: 12, weight: .medium))
                     .foregroundStyle(.orange)
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Runs more often than you might think")
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(.system(size: 12, weight: .semibold))
                     Text("\(ScheduleText.summary(job.schedule)). That's about \(ScheduleText.runsPerDay(job.schedule)) runs a day.")
-                        .font(.system(size: 12))
+                        .font(.system(size: 11.5))
                         .foregroundStyle(.primary.opacity(0.85))
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -193,12 +190,12 @@ struct OverlapCard: View {
             HStack(spacing: 10) {
                 CopyButton(title: "Copy fix prompt", tint: .orange, text: { FixPrompt.forOverlap(job) }, store: store)
                 Text("Paste it to your agent")
-                    .font(.system(size: 11.5))
+                    .font(.system(size: 11))
                     .foregroundStyle(.secondary)
             }
-            .padding(.leading, 24)
+            .padding(.leading, 22)
         }
-        .padding(12)
+        .padding(10)
         .frame(maxWidth: .infinity, alignment: .leading)
         .card(tint: .orange)
     }
@@ -215,12 +212,12 @@ struct RecentRunsSection: View {
         let records = Array(store.records(for: job).suffix(5).reversed())
         VStack(alignment: .leading, spacing: 6) {
             HStack {
-                Text("Recent runs").font(.system(size: 13, weight: .semibold))
+                Text("Recent runs").font(.system(size: 12, weight: .semibold))
                 Spacer()
                 if job.logPath != nil {
                     Button("See full log") { store.openLog(job) }
                         .buttonStyle(.link)
-                        .font(.system(size: 12, weight: .medium))
+                        .font(.system(size: 11.5, weight: .medium))
                 }
             }
             if records.isEmpty {
@@ -231,29 +228,29 @@ struct RecentRunsSection: View {
                         RunRow(record: record, now: now, showsDivider: index < records.count - 1)
                     }
                 }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 4)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 2)
                 .card()
             }
         }
         .padding(.horizontal, Metrics.edge)
-        .padding(.top, 12)
-        .padding(.bottom, 14)
+        .padding(.top, 10)
+        .padding(.bottom, 12)
     }
 
     private var emptyState: some View {
         VStack(spacing: 4) {
             Text("No runs recorded yet")
-                .font(.system(size: 13, weight: .medium))
+                .font(.system(size: 12, weight: .medium))
             Text(emptyMessage)
-                .font(.system(size: 12))
+                .font(.system(size: 11.5))
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 18)
-        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+        .padding(.horizontal, 14)
         .background(
             RoundedRectangle(cornerRadius: Metrics.cardRadius, style: .continuous)
                 .strokeBorder(.quaternary, style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
@@ -274,19 +271,19 @@ struct RunRow: View {
     let showsDivider: Bool
 
     var body: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 8) {
             Circle()
                 .fill(color)
-                .frame(width: 7, height: 7)
+                .frame(width: 6, height: 6)
             Text(TimeText.runDay(record.end ?? record.start, now: now))
-                .font(.system(size: 13))
+                .font(.system(size: 12))
                 .monospacedDigit()
             Spacer()
             Text(outcome)
-                .font(.system(size: 12))
+                .font(.system(size: 11.5))
                 .foregroundStyle(failed ? AnyShapeStyle(Color.red) : AnyShapeStyle(.tertiary))
         }
-        .padding(.vertical, 7)
+        .padding(.vertical, 6)
         .overlay(alignment: .bottom) {
             if showsDivider { Divider().opacity(0.5) }
         }
@@ -329,9 +326,8 @@ struct ActionBar: View {
                 run()
             } label: {
                 runLabel
-                    .frame(maxWidth: .infinity)
             }
-            .buttonStyle(.glassProminent)
+            .buttonStyle(GlassCapsuleButtonStyle(prominent: true))
             .disabled(phase != .idle || job.state == .running)
 
             if job.source == .launchd {
@@ -339,9 +335,8 @@ struct ActionBar: View {
                     Task { await store.setPaused(job, paused: job.state != .paused) }
                 } label: {
                     Label(job.state == .paused ? "Resume" : "Pause", systemImage: job.state == .paused ? "play" : "pause.fill")
-                        .frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.glass)
+                .buttonStyle(GlassCapsuleButtonStyle())
             }
 
             Menu {
@@ -358,19 +353,17 @@ struct ActionBar: View {
                 }
             } label: {
                 Image(systemName: "ellipsis")
-                    .frame(width: 16, height: 16)
             }
             .menuStyle(.button)
             .menuIndicator(.hidden)
-            .buttonStyle(.glass)
-            .buttonBorderShape(.circle)
+            .buttonStyle(GlassCircleButtonStyle(size: Metrics.actionHeight))
             .fixedSize()
+            .help("More")
         }
-        .buttonBorderShape(.capsule)
-        .controlSize(.large)
+        .labelStyle(CompactLabelStyle())
         .padding(.horizontal, Metrics.edge)
-        .padding(.top, 12)
-        .padding(.bottom, 16)
+        .padding(.top, 10)
+        .padding(.bottom, 12)
         .overlay(alignment: .top) { Divider().opacity(0.6) }
     }
 
@@ -380,8 +373,8 @@ struct ActionBar: View {
         case .idle:
             Label(isFailed ? "Try Again" : "Run Now", systemImage: "play.fill")
         case .starting:
-            HStack(spacing: 6) {
-                ProgressView().controlSize(.small)
+            HStack(spacing: 5) {
+                ProgressView().controlSize(.mini)
                 Text("Starting…")
             }
         case .started:

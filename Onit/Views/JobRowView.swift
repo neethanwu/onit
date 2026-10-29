@@ -9,12 +9,12 @@ struct JobRowView: View {
 
     var body: some View {
         Button(action: onOpen) {
-            HStack(spacing: 10) {
+            HStack(spacing: 8) {
                 StatusDot(job: job)
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(spacing: 6) {
                         Text(job.name)
-                            .font(.system(size: 13, weight: .semibold))
+                            .font(.system(size: 12.5, weight: .semibold))
                             .foregroundStyle(job.state == .paused || job.isHidden ? .secondary : .primary)
                             .lineLimit(1)
                         SourceTag(source: job.source)
@@ -33,7 +33,7 @@ struct JobRowView: View {
                         Text(ScheduleText.summary(job.schedule))
                             .lineLimit(1)
                     }
-                    .font(.system(size: 12))
+                    .font(.system(size: 11.5))
                     .foregroundStyle(.secondary)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -41,22 +41,22 @@ struct JobRowView: View {
                 VStack(alignment: .trailing, spacing: 2) {
                     let style = StatusStyle(job)
                     Text(style.title)
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(.system(size: 11.5, weight: .semibold))
                         .foregroundStyle(style.color)
                     if let detail = statusDetail {
                         Text(detail)
-                            .font(.system(size: 12))
+                            .font(.system(size: 11.5))
                             .foregroundStyle(.tertiary)
                     }
                 }
                 .monospacedDigit()
                 .frame(width: Metrics.statusColumn, alignment: .trailing)
             }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 9)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 7)
             .contentShape(Rectangle())
             .background(
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
                     .fill(rowFill)
             )
         }

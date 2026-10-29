@@ -1,11 +1,13 @@
 import SwiftUI
 
 enum Metrics {
-    static let popoverWidth: CGFloat = 360
-    static let edge: CGFloat = 18
-    static let cardRadius: CGFloat = 12
-    static let statusColumn: CGFloat = 84
-    static let dotColumn: CGFloat = 14
+    static let popoverWidth: CGFloat = 320
+    static let edge: CGFloat = 14
+    static let cardRadius: CGFloat = 10
+    static let statusColumn: CGFloat = 72
+    static let dotColumn: CGFloat = 12
+    static let controlSize: CGFloat = 26
+    static let actionHeight: CGFloat = 28
 }
 
 extension Animation {
@@ -44,21 +46,21 @@ struct StatusDot: View {
             if job.state == .running {
                 Circle()
                     .fill(Color.blue.opacity(0.22))
-                    .frame(width: 14, height: 14)
+                    .frame(width: 12, height: 12)
                     .scaleEffect(breathing ? 1 : 0.7)
                     .opacity(breathing ? 1 : 0.5)
             }
             if job.state == .paused || job.state == .waiting {
                 Circle()
                     .strokeBorder(.secondary, lineWidth: 1.5)
-                    .frame(width: 8, height: 8)
+                    .frame(width: 7, height: 7)
             } else {
                 Circle()
                     .fill(StatusStyle(job).color)
-                    .frame(width: 8, height: 8)
+                    .frame(width: 7, height: 7)
             }
         }
-        .frame(width: Metrics.dotColumn, height: 14)
+        .frame(width: Metrics.dotColumn, height: 12)
         .onAppear {
             guard job.state == .running, !reduceMotion else { return }
             withAnimation(.easeInOut(duration: 1).repeatForever(autoreverses: true)) { breathing = true }
@@ -71,9 +73,9 @@ struct SourceTag: View {
 
     var body: some View {
         Text(source.rawValue)
-            .font(.system(size: 10.5, weight: .medium))
+            .font(.system(size: 10, weight: .medium))
             .foregroundStyle(source == .cron ? AnyShapeStyle(Color.orange) : AnyShapeStyle(.tertiary))
-            .padding(.horizontal, 5)
+            .padding(.horizontal, 4)
             .padding(.vertical, 0.5)
             .background(
                 RoundedRectangle(cornerRadius: 4)
@@ -100,7 +102,7 @@ struct CopyButton: View {
             }
         } label: {
             Label(copied ? "Copied" : title, systemImage: copied ? "checkmark" : "doc.on.doc")
-                .font(.system(size: 12, weight: .semibold))
+                .font(.system(size: 11.5, weight: .semibold))
                 .contentTransition(.opacity)
                 .foregroundStyle(copied ? Color.green : tint)
         }
@@ -123,10 +125,55 @@ struct FactRow<Value: View>: View {
             Spacer(minLength: 12)
             value.fontWeight(.medium)
         }
-        .font(.system(size: 13))
-        .padding(.vertical, 7)
+        .font(.system(size: 12))
+        .padding(.vertical, 6)
         .overlay(alignment: .bottom) {
             if showsDivider { Divider().opacity(0.6) }
+        }
+    }
+}
+
+/// The round glass control used for refresh, back and "more", so all three match in size.
+struct GlassCircleButtonStyle: ButtonStyle {
+    var size = Metrics.controlSize
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.system(size: 12, weight: .semibold))
+            .foregroundStyle(.primary)
+            .frame(width: size, height: size)
+            .contentShape(Circle())
+            .glassEffect(.regular.interactive(), in: .circle)
+            .scaleEffect(configuration.isPressed ? 0.94 : 1)
+            .animation(.easeOut(duration: 0.16), value: configuration.isPressed)
+    }
+}
+
+/// Capsule glass buttons in the action bar, all the same height.
+struct GlassCapsuleButtonStyle: ButtonStyle {
+    var prominent = false
+    @Environment(\.isEnabled) private var isEnabled
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.system(size: 12.5, weight: .semibold))
+            .foregroundStyle(prominent ? AnyShapeStyle(.white) : AnyShapeStyle(.primary))
+            .frame(maxWidth: .infinity)
+            .frame(height: Metrics.actionHeight)
+            .contentShape(Capsule())
+            .glassEffect(prominent ? .regular.tint(.accentColor).interactive() : .regular.interactive(), in: .capsule)
+            .opacity(isEnabled ? 1 : 0.6)
+            .scaleEffect(configuration.isPressed ? 0.97 : 1)
+            .animation(.easeOut(duration: 0.16), value: configuration.isPressed)
+    }
+}
+
+/// Icon and title with a tighter gap and a smaller icon than the default label.
+struct CompactLabelStyle: LabelStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        HStack(spacing: 5) {
+            configuration.icon.font(.system(size: 10, weight: .bold))
+            configuration.title
         }
     }
 }
