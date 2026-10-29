@@ -1,0 +1,36 @@
+# macOS
+.DS_Store
+*.swp
+*~
+
+# Editor
+.vscode/
+.idea/
+
+# Xcode
+DerivedData/
+*.xcuserstate
+xcuserdata/
+.swiftpm/
+
+# Swift Package Manager
+.build/
+Package.resolved
+
+# Secrets
+.env
+
+# AI config
+CLAUDE.md
+AGENTS.md
+.claude/
+
+# Build outputs
+onit.app/
+*.dmg
+*.zip
+build/
+
+# Docs and design working files
+docs/
+design/
