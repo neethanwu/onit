@@ -117,7 +117,7 @@ enum ScheduleText {
         return "\(number)\(suffix)"
     }
 
-    private static func lowercasedFirst(_ text: String) -> String {
+    static func lowercasedFirst(_ text: String) -> String {
         guard let first = text.first else { return text }
         return first.lowercased() + text.dropFirst()
     }

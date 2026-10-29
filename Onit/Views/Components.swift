@@ -101,15 +101,28 @@ struct CopyButton: View {
                 withAnimation(.easeOut(duration: 0.2)) { copied = false }
             }
         } label: {
-            Label(copied ? "Copied" : title, systemImage: copied ? "checkmark" : "doc.on.doc")
-                .font(.system(size: 11.5, weight: .semibold))
-                .contentTransition(.opacity)
-                .foregroundStyle(copied ? Color.green : tint)
+            // Both labels are laid out at once so the capsule never changes size.
+            ZStack(alignment: .leading) {
+                label(title, icon: "doc.on.doc", iconColor: tint).opacity(copied ? 0 : 1)
+                label("Copied", icon: "checkmark", iconColor: .green).opacity(copied ? 1 : 0)
+            }
+            .padding(.horizontal, 10)
+            .frame(height: 24)
+            .glassEffect(.regular.interactive(), in: .capsule)
         }
-        .buttonStyle(.glass)
-        .buttonBorderShape(.capsule)
-        .tint((copied ? Color.green : tint).opacity(0.25))
-        .controlSize(.small)
+        .buttonStyle(PressableRowStyle())
+    }
+
+    private func label(_ text: String, icon: String, iconColor: Color) -> some View {
+        HStack(spacing: 5) {
+            Image(systemName: icon)
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundStyle(iconColor)
+                .frame(width: 12)
+            Text(text)
+                .font(.system(size: 11.5, weight: .medium))
+                .foregroundStyle(.primary)
+        }
     }
 }
 
@@ -123,7 +136,7 @@ struct FactRow<Value: View>: View {
         HStack {
             Text(label).foregroundStyle(.secondary)
             Spacer(minLength: 12)
-            value.fontWeight(.medium)
+            value
         }
         .font(.system(size: 12))
         .padding(.vertical, 6)
@@ -156,7 +169,7 @@ struct GlassCapsuleButtonStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.system(size: 12.5, weight: .semibold))
+            .font(.system(size: 12.5, weight: .medium))
             .foregroundStyle(prominent ? AnyShapeStyle(.white) : AnyShapeStyle(.primary))
             .frame(maxWidth: .infinity)
             .frame(height: Metrics.actionHeight)
@@ -172,7 +185,7 @@ struct GlassCapsuleButtonStyle: ButtonStyle {
 struct CompactLabelStyle: LabelStyle {
     func makeBody(configuration: Configuration) -> some View {
         HStack(spacing: 5) {
-            configuration.icon.font(.system(size: 10, weight: .bold))
+            configuration.icon.font(.system(size: 10, weight: .semibold))
             configuration.title
         }
     }

@@ -104,6 +104,10 @@ final class JobStore {
     private var activeJobs: [Job] { jobs.filter { !$0.isHidden } }
 
     var hiddenCount: Int { jobs.filter(\.isHidden).count }
+    var activeCount: Int { activeJobs.count }
+    var overlapCount: Int { activeJobs.filter(\.schedule.hasOverlap).count }
+    /// Running jobs that will finish, as opposed to always-on ones.
+    var activeRunCount: Int { activeJobs.filter { $0.state == .running && !$0.isAlwaysOn }.count }
     var failedCount: Int { activeJobs.filter { if case .failed = $0.state { true } else { false } }.count }
     var runningCount: Int { activeJobs.filter { $0.state == .running }.count }
 

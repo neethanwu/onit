@@ -30,8 +30,7 @@ struct JobDetailView: View {
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 7) {
                     Text(job.name)
-                        .font(.system(size: 16, weight: .bold))
-                        .tracking(-0.2)
+                        .font(.system(size: 15, weight: .semibold))
                         .lineLimit(1)
                     SourceTag(source: job.source)
                 }
@@ -59,12 +58,12 @@ struct JobDetailView: View {
         switch job.state {
         case .failed:
             let when = job.lastRun.map { " \(TimeText.ago($0, now: now))" } ?? ""
-            return joined(Text("Failed\(when)").foregroundStyle(.red).fontWeight(.semibold), nextText)
+            return joined(Text("Failed\(when)").foregroundStyle(.red).fontWeight(.medium), nextText)
         case .succeeded:
-            return joined(Text("Last run OK").foregroundStyle(.green).fontWeight(.semibold), nextText)
+            return joined(Text("Last run OK").foregroundStyle(.green).fontWeight(.medium), nextText)
         case .running:
             let since = store.runningSince(job).map { " \(TimeText.elapsed(since: $0, now: now))" } ?? ""
-            return Text("Running\(since)").foregroundStyle(.blue).fontWeight(.semibold)
+            return Text("Running\(since)").foregroundStyle(.blue).fontWeight(.medium)
         case .paused:
             return Text("Paused · won't run until you resume it")
         case .waiting:
@@ -212,7 +211,7 @@ struct RecentRunsSection: View {
         let records = Array(store.records(for: job).suffix(5).reversed())
         VStack(alignment: .leading, spacing: 6) {
             HStack {
-                Text("Recent runs").font(.system(size: 12, weight: .semibold))
+                Text("Recent runs").font(.system(size: 12, weight: .medium))
                 Spacer()
                 if job.logPath != nil {
                     Button("See full log") { store.openLog(job) }

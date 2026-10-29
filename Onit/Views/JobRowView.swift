@@ -14,7 +14,7 @@ struct JobRowView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(spacing: 6) {
                         Text(job.name)
-                            .font(.system(size: 12.5, weight: .semibold))
+                            .font(.system(size: 12.5, weight: .medium))
                             .foregroundStyle(job.state == .paused || job.isHidden ? .secondary : .primary)
                             .lineLimit(1)
                         SourceTag(source: job.source)
@@ -41,7 +41,7 @@ struct JobRowView: View {
                 VStack(alignment: .trailing, spacing: 2) {
                     let style = StatusStyle(job)
                     Text(style.title)
-                        .font(.system(size: 11.5, weight: .semibold))
+                        .font(.system(size: 11.5, weight: .medium))
                         .foregroundStyle(style.color)
                     if let detail = statusDetail {
                         Text(detail)

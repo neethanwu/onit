@@ -28,8 +28,7 @@ struct JobListView: View {
         HStack(alignment: .center) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
-                    .font(.system(size: 17, weight: .bold))
-                    .tracking(-0.2)
+                    .font(.system(size: 15, weight: .semibold))
                 subtitle
                     .font(.system(size: 12))
                     .foregroundStyle(.secondary)
@@ -45,22 +44,21 @@ struct JobListView: View {
         .padding(.bottom, 10)
     }
 
+    /// The headline says how things are; the count goes underneath.
     private var title: String {
-        let count = store.visibleJobs.filter { !$0.isHidden }.count
-        if count == 0 { return "onit" }
-        return count == 1 ? "1 job" : "\(count) jobs"
+        switch store.overallState {
+        case .empty: return "onit"
+        case .failed: return store.failedCount == 1 ? "1 job failed" : "\(store.failedCount) jobs failed"
+        case .headsUp: return store.overlapCount == 1 ? "1 job needs a look" : "\(store.overlapCount) jobs need a look"
+        case .running: return store.activeRunCount == 1 ? "1 job running" : "\(store.activeRunCount) jobs running"
+        case .ok: return "All good"
+        }
     }
 
     private var subtitle: Text {
-        var parts: [Text] = []
-        if store.failedCount > 0 {
-            parts.append(Text("\(store.failedCount) failed").foregroundStyle(.red).fontWeight(.semibold))
-        }
-        if store.runningCount > 0 {
-            parts.append(Text("\(store.runningCount) running"))
-        }
-        if parts.isEmpty { return Text(store.jobs.isEmpty ? "Looking for jobs…" : "All good") }
-        return parts.dropFirst().reduce(parts[0]) { Text("\($0) · \($1)") }
+        let count = store.activeCount
+        guard count > 0 else { return Text(store.jobs.isEmpty ? "Looking for jobs…" : "Nothing to watch") }
+        return Text(count == 1 ? "Watching 1 job" : "Watching \(count) jobs")
     }
 
     @ViewBuilder
@@ -98,13 +96,13 @@ struct NextUpCard: View {
                     .tracking(0.6)
                     .foregroundStyle(.tertiary)
                 Text(job.name)
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.system(size: 13, weight: .medium))
                     .lineLimit(1)
             }
             Spacer()
             VStack(alignment: .trailing, spacing: 1) {
                 Text(TimeText.until(date, now: now))
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.system(size: 14, weight: .medium))
                     .contentTransition(.numericText())
                 Text("at \(TimeText.clock(date))")
                     .font(.system(size: 11))
@@ -183,7 +181,7 @@ struct EmptyListView: View {
                 .frame(width: 52, height: 52)
             VStack(spacing: 5) {
                 Text("Nothing scheduled yet")
-                    .font(.system(size: 15, weight: .bold))
+                    .font(.system(size: 15, weight: .semibold))
                 Text("When you or your agent sets up something that runs on a schedule, it shows up here.")
                     .font(.system(size: 12))
                     .foregroundStyle(.secondary)

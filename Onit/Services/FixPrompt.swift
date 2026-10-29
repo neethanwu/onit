@@ -4,7 +4,7 @@ import Foundation
 enum FixPrompt {
     static func forOverlap(_ job: Job) -> String {
         let interval = job.schedule.interval.map { ScheduleText.intervalPhrase($0).lowercased() } ?? "on an interval"
-        let times = job.schedule.calendar.map(ScheduleText.calendarPhrase).joined(separator: ", ")
+        let times = job.schedule.calendar.map { ScheduleText.lowercasedFirst(ScheduleText.calendarPhrase($0)) }.joined(separator: ", ")
         return """
         My macOS launchd job "\(job.label)" has two schedules at once: StartInterval (\(interval)) and StartCalendarInterval (\(times)). launchd runs it on both, so it runs about \(ScheduleText.runsPerDay(job.schedule)) times a day.
 
