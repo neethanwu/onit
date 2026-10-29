@@ -7,7 +7,7 @@
     <key>CFBundleDisplayName</key>
     <string>onit</string>
     <key>CFBundleIdentifier</key>
-    <string>com.onit.app</string>
+    <string>com.neethanwu.onit</string>
     <key>CFBundleVersion</key>
     <string>1</string>
     <key>CFBundleShortVersionString</key>
