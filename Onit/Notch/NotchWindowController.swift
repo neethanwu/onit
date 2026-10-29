@@ -13,9 +13,6 @@ final class NotchModel {
     var notchWidth: CGFloat = 180
     var notchHeight: CGFloat = 32
 
-    /// A task to open straight away, set when the badge in the right wing is clicked.
-    var deepLink: String?
-    var deepLinkToken = 0
     /// Clicks on Bead in the panel header; each one makes it hop.
     var beadPokes = 0
 
