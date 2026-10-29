@@ -86,7 +86,7 @@ make run     # build, bundle, sign ad hoc and open onit.app
 make test    # run the unit tests
 make bundle  # build onit.app without opening it
 make sign    # sign with SIGN_IDENTITY (set it in .env for a Developer ID build)
-make icon    # redraw SupportFiles/AppIcon.icns from SupportFiles/generate-icon.swift
+make icon    # redraw the app icon and assets/icon.png from SupportFiles/generate-icon.swift
 ```
 
 The project is a Swift package with no dependencies.
