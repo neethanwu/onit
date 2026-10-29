@@ -11,6 +11,12 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/neethanwu/onit/releases/latest/download/onit.dmg">
+    <img src="https://img.shields.io/badge/download-onit.dmg-black?style=for-the-badge&logo=apple" alt="download onit.dmg">
+  </a>
+</p>
+
+<p align="center">
   <img src="https://img.shields.io/badge/macOS-26%2B-black" alt="macOS 26+">
   <img src="https://img.shields.io/badge/Swift-6.2%2B-F05138" alt="Swift 6.2+">
   <img src="https://img.shields.io/badge/License-MIT-blue" alt="License: MIT">
