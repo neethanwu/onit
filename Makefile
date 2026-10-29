@@ -5,7 +5,7 @@ SIGN_IDENTITY ?= -
 
 -include .env
 
-.PHONY: build test bundle sign run clean
+.PHONY: build test bundle sign run clean icon
 
 build:
 	swift build -c release
@@ -18,6 +18,8 @@ bundle: build
 	@mkdir -p $(BUNDLE_DIR)/Contents/MacOS
 	cp .build/release/$(EXECUTABLE) $(BUNDLE_DIR)/Contents/MacOS/$(EXECUTABLE)
 	cp SupportFiles/Info.plist $(BUNDLE_DIR)/Contents/
+	@mkdir -p $(BUNDLE_DIR)/Contents/Resources
+	cp SupportFiles/AppIcon.icns $(BUNDLE_DIR)/Contents/Resources/AppIcon.icns
 	@echo "Bundled: $(BUNDLE_DIR)"
 
 sign: bundle
@@ -27,6 +29,9 @@ sign: bundle
 run: bundle
 	codesign --force --sign - $(BUNDLE_DIR)
 	open $(BUNDLE_DIR)
+
+icon:
+	swift SupportFiles/generate-icon.swift
 
 clean:
 	rm -rf .build $(BUNDLE_DIR)

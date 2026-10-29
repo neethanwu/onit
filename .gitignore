@@ -15,6 +15,7 @@ xcuserdata/
 
 # Swift Package Manager
 .build/
+SupportFiles/AppIcon.iconset/
 Package.resolved
 
 # Secrets
@@ -30,6 +31,7 @@ onit.app/
 *.dmg
 *.zip
 build/
+SupportFiles/AppIcon.iconset/
 
 # Docs and design working files
 docs/
