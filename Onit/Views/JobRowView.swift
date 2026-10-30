@@ -51,6 +51,9 @@ struct JobRowView: View {
             }
             .padding(.horizontal, 8)
             .padding(.vertical, 7)
+            // A hidden task is shown only for reference: greyed out, its status colours muted.
+            .saturation(job.isHidden ? 0 : 1)
+            .opacity(job.isHidden ? 0.55 : 1)
             .contentShape(Rectangle())
             .background(
                 RoundedRectangle(cornerRadius: 8, style: .continuous)

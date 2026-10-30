@@ -75,14 +75,34 @@ struct JobListView: View {
 
     private var subtitle: Text {
         let count = store.activeCount
-        guard count > 0 else { return Text(store.jobs.isEmpty ? "Looking for tasks…" : "Nothing to watch") }
-        return Text(count == 1 ? "Watching 1 task" : "Watching \(count) tasks")
+        if store.jobs.isEmpty { return Text("Looking for tasks…") }
+        let watching = count == 0 ? "Nothing to watch" : count == 1 ? "Watching 1 task" : "Watching \(count) tasks"
+        // Say how many are hidden whenever that explains what's on screen: an empty list, or hidden rows shown below.
+        let hidden = store.hiddenCount
+        guard hidden > 0, count == 0 || store.showHidden else { return Text(watching) }
+        return Text("\(watching) · \(hidden) hidden")
     }
 
     @ViewBuilder
     private func list(_ jobs: [Job]) -> some View {
-        let rows = FluidHoverStack(items: jobs, onActivate: onSelect) { job, _ in
-            JobRowView(store: store, job: job, now: now) { onSelect(job) }
+        // Hidden tasks, when shown, sit in their own group below the ones onit watches.
+        let watched = jobs.filter { !$0.isHidden }
+        let hidden = jobs.filter(\.isHidden)
+        let rows = VStack(alignment: .leading, spacing: 0) {
+            if !watched.isEmpty {
+                rowStack(watched)
+            }
+            if !hidden.isEmpty {
+                Text("Hidden")
+                    .font(.system(size: 10, weight: .semibold))
+                    .textCase(.uppercase)
+                    .tracking(0.6)
+                    .foregroundStyle(.tertiary)
+                    .padding(.horizontal, 8)
+                    .padding(.top, watched.isEmpty ? 4 : 10)
+                    .padding(.bottom, 4)
+                rowStack(hidden)
+            }
         }
         .padding(.horizontal, 6)
         .padding(.top, 6)
@@ -94,6 +114,14 @@ struct JobListView: View {
                 .scrollIndicators(.automatic)
         } else {
             rows
+        }
+    }
+}
+
+extension JobListView {
+    fileprivate func rowStack(_ jobs: [Job]) -> some View {
+        FluidHoverStack(items: jobs, onActivate: onSelect) { job, _ in
+            JobRowView(store: store, job: job, now: now) { onSelect(job) }
         }
     }
 }
