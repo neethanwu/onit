@@ -25,6 +25,8 @@
   <img src="https://img.shields.io/badge/License-MIT-blue" alt="License: MIT">
 </p>
 
+https://github.com/user-attachments/assets/71025834-5832-499d-b08f-20d79eb3d722
+
 ## Why
 
 Agents, scripts and tools are good at setting up work that runs on a schedule: a nightly backup, a retro every morning, a sync that runs all day. On a Mac that work ends up as launchd agents and crontab entries, and there is no comfortable place to see them. You have to know where the plist files live, read `launchctl` output, and guess what `StartCalendarInterval` means.
