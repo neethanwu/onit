@@ -56,6 +56,7 @@ final class NotchWindowController {
 
         let root = NotchView(store: store, model: model)
             .environment(display)
+            .environment(Updates.shared)
         let hosting = FirstClickHostingView(rootView: root)
         hosting.sizingOptions = []
         panel.contentView = hosting

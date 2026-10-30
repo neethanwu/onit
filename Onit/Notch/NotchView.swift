@@ -19,6 +19,7 @@ struct NotchView: View {
     @State private var headerSlot = CGRect.zero
     @State private var resetToken = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(Updates.self) private var updates
 
     private var open: Bool { model.isExpanded }
     private var wing: CGFloat { NotchModel.wingWidth }
@@ -138,6 +139,17 @@ struct NotchView: View {
             gaze: gaze(from: center),
             pokes: model.beadPokes
         )
+        // A new version waiting: a small blue dot on Bead while the notch is closed, like a badge on an app icon.
+        .overlay(alignment: .topTrailing) {
+            Circle()
+                .fill(Color(red: 0.04, green: 0.52, blue: 1))
+                .frame(width: 7, height: 7)
+                .overlay(Circle().stroke(.black, lineWidth: 1.5))
+                .offset(x: 3, y: -2)
+                .scaleEffect(updates.hasUpdate && inWing ? 1 : 0.2)
+                .opacity(updates.hasUpdate && inWing ? 1 : 0)
+                .animation(.spring(duration: 0.35, bounce: 0.4), value: updates.hasUpdate && inWing)
+        }
         .offset(x: center.x - beadSize / 2, y: center.y - beadSize / 2)
         .animation(.notchOpen, value: inWing)
         .allowsHitTesting(false)

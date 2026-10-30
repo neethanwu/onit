@@ -17,12 +17,18 @@ enum MenuBarIcon {
     static let size = NSSize(width: 22, height: 18)
     private static let diameter: CGFloat = 13
 
-    static func image(for mood: BeadMood, pose: BeadPose) -> NSImage {
-        let colored: (body: NSColor, eyes: NSColor)? = switch mood {
+    /// `badge` adds a small blue dot for a waiting update. A template image can't hold a colour,
+    /// so a badged calm Bead is drawn in the label colour instead, which still follows the bar.
+    static func image(for mood: BeadMood, pose: BeadPose, badge: Bool = false) -> NSImage {
+        var colored: (body: NSColor, eyes: NSColor)? = switch mood {
         case .onIt: (NSColor(BeadMood.onIt.body), NSColor(BeadMood.onIt.eyes))
         case .headsUp: (NSColor(BeadMood.headsUp.body), NSColor(BeadMood.headsUp.eyes))
         case .failed: (NSColor(BeadMood.failed.body), NSColor(BeadMood.failed.eyes))
         case .dozing, .nothing: nil
+        }
+
+        if badge, colored == nil, mood == .dozing {
+            colored = (.labelColor, .windowBackgroundColor)
         }
 
         let image = NSImage(size: size, flipped: true) { _ in
@@ -63,6 +69,13 @@ enum MenuBarIcon {
                     let height = pose.blink ? 0.5 : eyeSize
                     context.fillEllipse(in: CGRect(x: eyeX - eyeSize / 2, y: eyeY - height / 2, width: eyeSize, height: height))
                 }
+            }
+            if badge {
+                context.setBlendMode(.normal)
+                context.setLineDash(phase: 0, lengths: [])
+                let dot = CGRect(x: center.x + diameter / 2 - 3.2, y: center.y - diameter / 2 - 1.2, width: 5, height: 5)
+                context.setFillColor(NSColor(red: 0.04, green: 0.52, blue: 1, alpha: 1).cgColor)
+                context.fillEllipse(in: dot)
             }
             return true
         }

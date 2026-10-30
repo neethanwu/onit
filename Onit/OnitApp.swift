@@ -24,8 +24,9 @@ struct OnitApp: App {
         MenuBarExtra(isInserted: Binding(get: { display.showsMenuBarIcon }, set: { _ in })) {
             PopoverView(store: store)
                 .environment(display)
+                .environment(Updates.shared)
         } label: {
-            Image(nsImage: MenuBarIcon.image(for: menuBead.mood, pose: menuBead.pose))
+            Image(nsImage: MenuBarIcon.image(for: menuBead.mood, pose: menuBead.pose, badge: Updates.shared.hasUpdate))
         }
         .menuBarExtraStyle(.window)
     }
@@ -34,5 +35,6 @@ struct OnitApp: App {
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
+        Updates.shared.start()
     }
 }

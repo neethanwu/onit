@@ -53,7 +53,7 @@ onit puts all of it in one small panel, in plain language: what you have schedul
 3. Open onit from Applications. It has no Dock icon: look for Bead beside the notch, or in the menu bar on a Mac without one.
 4. Optional: turn on **Open at Login** from the ··· menu.
 
-onit is signed with a Developer ID and notarized by Apple, so it opens without a Gatekeeper warning.
+onit is signed with a Developer ID and notarized by Apple, so it opens without a Gatekeeper warning. It checks for a new version once a day and shows it in its panel; choose Update and it installs and reopens itself. You can also check from the ··· menu.
 
 Requirements: macOS 26 or later, on Apple silicon or Intel.
 
@@ -76,7 +76,7 @@ make run
 
 ## What onit reads
 
-onit only reads from your own Mac and never sends anything anywhere.
+onit only reads from your own Mac and never sends anything anywhere. The one thing it fetches is its own update feed on GitHub, once a day.
 
 | Source | What onit uses it for |
 | --- | --- |
@@ -104,18 +104,18 @@ make run     # build, bundle, sign ad hoc and open onit.app
 make test    # run the unit tests
 make bundle  # build onit.app without opening it
 make sign    # sign with SIGN_IDENTITY (set it in .env for a Developer ID build)
-make release # sign, notarize and package onit.dmg (needs SIGN_IDENTITY and NOTARY_PROFILE in .env)
+make release # sign, notarize and package onit.dmg, then write appcast.xml (needs SIGN_IDENTITY and NOTARY_PROFILE in .env, and the update key in the keychain)
 make icon    # redraw the app icon and assets/icon.png from SupportFiles/generate-icon.swift
 ```
 
-The project is a Swift package with no dependencies.
+The project is a Swift package. Its one dependency is [Sparkle](https://sparkle-project.org), for updates.
 
 ```
 Onit/
   OnitApp.swift            App entry: menu bar extra and notch controller
   Models/                  Job, run records and the JobStore that polls and acts
   Services/                launchd, cron and unified log readers, schedule text,
-                           failure explanations and fix prompts
+                           failure explanations, fix prompts and updates
   Notch/                   Notch window, geometry and the notch view
   Views/                   Shared list, detail, Bead and control components
   Utilities/               Time formatting and the menu bar icon

@@ -13,6 +13,10 @@ struct JobListView: View {
         VStack(spacing: 0) {
             header
                 .zIndex(1)
+            UpdateCard(updates: updates)
+                .padding(.horizontal, 6)
+                .padding(.bottom, updates.phase == .idle ? 0 : 6)
+                .animation(.onitSpring, value: updates.phase)
             if jobs.isEmpty {
                 EmptyListView(store: store)
             } else {
@@ -27,6 +31,7 @@ struct JobListView: View {
 
     @Environment(\.notchStyle) private var notchStyle
     @Environment(\.notchModel) private var notchModel
+    @Environment(Updates.self) private var updates
 
     private var header: some View {
         HStack(alignment: .center, spacing: 10) {
@@ -164,6 +169,7 @@ struct NextUpCard: View {
 struct MoreMenu: View {
     @Bindable var store: JobStore
     @Environment(DisplayController.self) private var display
+    @Environment(Updates.self) private var updates
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -191,6 +197,9 @@ struct MoreMenu: View {
             store.launchesAtLogin.toggle()
         })
         entries.append(.divider(id: "about"))
+        entries.append(.item(title: "Check for Updates…", systemImage: "arrow.down.circle") {
+            updates.check()
+        })
         entries.append(.item(title: "About onit", systemImage: "info.circle") {
             NSApp.activate()
             NSApp.orderFrontStandardAboutPanel(nil)
