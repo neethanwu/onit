@@ -10,6 +10,8 @@ final class NotchModel {
     @ObservationIgnored var onExpandChange: ((Bool) -> Void)?
     /// Set by the popover so Escape steps back from a task's detail before closing the panel.
     var showingDetail = false
+    /// A "more" menu is open, so Bead in the header steps back with the rest of the panel.
+    var menuOpen = false
     var notchWidth: CGFloat = 180
     var notchHeight: CGFloat = 32
 

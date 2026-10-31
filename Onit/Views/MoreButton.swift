@@ -23,6 +23,31 @@ extension EnvironmentValues {
     @Entry var menuHost: MenuHost?
 }
 
+/// The open notch menu, handed up to the panel, which draws it above everything else
+/// and dims what's behind it.
+struct OpenMenu {
+    let entries: [MenuEntry]
+    let upward: Bool
+    let gap: CGFloat
+    let button: Anchor<CGRect>
+}
+
+struct OpenMenuKey: PreferenceKey {
+    static var defaultValue: OpenMenu? { nil }
+    static func reduce(value: inout OpenMenu?, nextValue: () -> OpenMenu?) {
+        value = value ?? nextValue()
+    }
+}
+
+/// How far down the panel an open menu reaches, so a short panel can grow to hold it.
+struct MenuExtentKey: PreferenceKey {
+    static let space = "menu-host"
+    static let defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
+    }
+}
+
 /// The "···" button. In the menu bar it opens the system menu; in the notch, where a system
 /// menu would float off the black panel, it opens a matching dark menu inside the panel.
 struct MoreButton: View {
@@ -33,6 +58,8 @@ struct MoreButton: View {
 
     @Environment(\.notchStyle) private var notchStyle
     @Environment(\.menuHost) private var host
+    /// Where the button's top sits in the panel, to tell whether an upward menu would fit.
+    @State private var buttonTop: CGFloat = .infinity
 
     var body: some View {
         if notchStyle, let host {
@@ -44,7 +71,9 @@ struct MoreButton: View {
 
     private func notchButton(_ host: MenuHost) -> some View {
         let open = host.openID == id
-        let anchor: UnitPoint = opensUpward ? .bottomTrailing : .topTrailing
+        let menuEntries = entries()
+        // Opens upward only when the panel has room above; otherwise down, where the panel can grow.
+        let upward = opensUpward && buttonTop - 6 - NotchMenuCard.height(of: menuEntries) >= 0
         return Button {
             withAnimation(open ? .easeIn(duration: 0.1) : .spring(duration: 0.22, bounce: 0)) {
                 host.openID = open ? nil : id
@@ -54,18 +83,10 @@ struct MoreButton: View {
         }
         .buttonStyle(GlassCircleButtonStyle(size: size))
         .help("More")
-        .overlay(alignment: opensUpward ? .bottomTrailing : .topTrailing) {
-            if open {
-                NotchMenuCard(entries: entries()) {
-                    withAnimation(.easeIn(duration: 0.1)) { host.openID = nil }
-                }
-                .fixedSize()
-                .offset(y: opensUpward ? -(size + 6) : size + 6)
-                // Grows out of the button it belongs to, not from its own center.
-                .transition(.scale(scale: 0.92, anchor: anchor).combined(with: .opacity))
-            }
+        .onGeometryChange(for: CGFloat.self) { $0.frame(in: .named(MenuExtentKey.space)).minY } action: { buttonTop = $0 }
+        .anchorPreference(key: OpenMenuKey.self, value: .bounds) { bounds in
+            open ? OpenMenu(entries: menuEntries, upward: upward, gap: 6, button: bounds) : nil
         }
-        .zIndex(open ? 10 : 0)
     }
 
     private var systemMenu: some View {
@@ -98,7 +119,7 @@ struct MoreButton: View {
     }
 }
 
-private struct NotchMenuCard: View {
+struct NotchMenuCard: View {
     let entries: [MenuEntry]
     let close: () -> Void
 
@@ -119,10 +140,20 @@ private struct NotchMenuCard: View {
             }
         }
         .padding(5)
-        .frame(width: 214)
+        .frame(width: Self.width)
         .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color(white: 0.13)))
         .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(.white.opacity(0.08)))
         .shadow(color: .black.opacity(0.5), radius: 16, y: 8)
+    }
+
+    static let width: CGFloat = 214
+
+    /// The card's height, worked out from its rows so the direction is known before it opens.
+    static func height(of entries: [MenuEntry]) -> CGFloat {
+        entries.reduce(10) { total, entry in
+            if case .divider = entry { return total + 9 }
+            return total + 26
+        }
     }
 
     private func run(_ entry: MenuEntry) {

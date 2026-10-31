@@ -150,6 +150,8 @@ struct NotchView: View {
                 .opacity(updates.hasUpdate && inWing ? 1 : 0)
                 .animation(.spring(duration: 0.35, bounce: 0.4), value: updates.hasUpdate && inWing)
         }
+        .opacity(model.menuOpen && !inWing ? 0.35 : 1)
+        .animation(.easeOut(duration: 0.18), value: model.menuOpen)
         .offset(x: center.x - beadSize / 2, y: center.y - beadSize / 2)
         .animation(.notchOpen, value: inWing)
         .allowsHitTesting(false)
